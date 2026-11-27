@@ -77,8 +77,11 @@ It runs two ways:
 | Claude | The viewer's own Claude account | Your Anthropic API key, pasted in the app's Settings (saved only in that browser) |
 | Data | Shared workspace: doctors you share it with see the same patients and boards | Saved in that browser only |
 
-Published pages can't call ClinicalTrials.gov, so the app reads `web/trials.json`: every recruiting cancer
-treatment trial with a site in Latin America.
+Published pages can't call ClinicalTrials.gov, so the app reads a worldwide snapshot in `docs/data/`: every recruiting
+cancer treatment trial in the world (about 11,000). `index.json` (3 MB) loads up front for searching; full details
+(eligibility, sites, contacts) are split into 100 files and load only for trials someone looks at. Matching shortlists
+from the index, Claude picks the most promising, then checks each one's full eligibility criteria. Results rank by fit,
+then how promising the treatment is for this patient, then distance. Patients choose how far they could travel.
 
 ### Open it as a single file
 
@@ -103,4 +106,4 @@ bun run snapshot
 bun run build:site
 ```
 
-`build:site` writes `docs/index.html`, `docs/trials.json`, `docs/standalone.js` (the Anthropic SDK bundled for the browser) and the single-file `Eligo.html`.
+`snapshot` writes `docs/data/`. `build:site` writes `docs/index.html`, `docs/standalone.js` (the Anthropic SDK bundled for the browser) and the single-file `Eligo.html`, which carries the trial index and loads trial details from the GitHub Pages site.

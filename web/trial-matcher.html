@@ -309,7 +309,7 @@ const STEPS = [["interested", "Chose this trial"], ["precheck", "Requirements ch
 const DOCS = [["pathology", "Pathology or biopsy report"], ["imaging", "Latest scans (CT, MRI or PET) and their reports"], ["labs", "Recent blood tests"],
   ["treatments", "List of treatments received, with dates"], ["meds", "Current medicines and allergies"], ["id", "ID or passport (needed to travel)"], ["insurance", "Insurance or coverage information"]];
 const STATUS_LABEL = { pass: "Meets", fail: "Doesn't meet", unknown: "Needs information" };
-const PROX_LABEL = { same_country: "Sites in patient's country", same_region: "Sites in patient's region", abroad: "Sites in other regions" };
+const PROX_LABEL = { same_country: "Sites in patient's country", same_region: "Sites in patient's region", abroad: "Sites abroad" };
 const FIT_RANK = { likely: 0, possible: 1, unlikely: 2 }, PROX_RANK = { same_country: 0, same_region: 1, abroad: 2 };
 
 /* ---------------- tiny DOM helpers ---------------- */
@@ -352,10 +352,30 @@ const S = {
   self: { text: "", running: false, step: "", error: "", result: null, ctl: null },
   profile: null, profileLoaded: false, myMatch: null, members: {}, myColl: null,
   dir: { q: "", country: "", limit: 25 },
+  full: new Map(),
   enrollments: [], myEnroll: {}, myFacts: [], enr: {},
   drafts: {},
 };
 const isPatient = () => S.profile?.role === "patient";
+
+/* ---------------- trial data: a worldwide index up front, details on demand ---------------- */
+const DATA_BASE = window.ELIGO_DATA_BASE || "data/";
+const bucketLoads = new Map();
+function loadBucket(key) {
+  if (!bucketLoads.has(key)) bucketLoads.set(key, fetch(`${DATA_BASE}t/${key}.json`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then((rows) => { for (const [id, d] of Object.entries(rows)) { const base = S.byId.get(id); if (base) S.full.set(id, { ...base, ...d }); } })
+    .catch((e) => { bucketLoads.delete(key); throw e; }));
+  return bucketLoads.get(key);
+}
+function loadDetails(ids) { return Promise.all([...new Set(ids.filter((id) => !S.full.has(id)).map((id) => id.slice(-2)))].map(loadBucket)); }
+/* Views call need() with the trials they show; details arrive in the background and the view re-renders. */
+const needing = new Set();
+function need(ids) {
+  const missing = ids.filter((id) => id && S.byId.has(id) && !S.full.has(id) && !needing.has(id));
+  if (!missing.length) return;
+  missing.forEach((id) => needing.add(id));
+  loadDetails(missing).catch(() => {}).finally(() => { missing.forEach((id) => needing.delete(id)); scheduleRender(); });
+}
 
 /* ---------------- matching (Claude via the viewer's account) ---------------- */
 function regionOf(country) {
@@ -364,31 +384,73 @@ function regionOf(country) {
   for (const [r, l] of Object.entries(REGIONS)) if (l.some((x) => x.toLowerCase() === c)) return r;
   return null;
 }
+/* Where a trial's recruiting sites are relative to the patient. Uses full site details when loaded,
+   otherwise the countries from the index. */
 function proximity(trial, home) {
   const hm = home?.trim().toLowerCase(), hr = regionOf(home);
   const rank = (c) => (hm && c?.toLowerCase() === hm ? 0 : hr && regionOf(c) === hr ? 1 : 2);
-  const sites = [...trial.sites].sort((a, b) => rank(a[2]) - rank(b[2]));
-  return { level: ["same_country", "same_region", "abroad"][sites.length ? rank(sites[0][2]) : 2], sites,
-    countries: [...new Set(trial.sites.map((s) => s[2]).filter(Boolean))] };
+  const full = S.full.get(trial.id);
+  const sites = [...(full ? full.sites : trial.countries.map((c) => [null, null, c]))].sort((a, b) => rank(a[2]) - rank(b[2]));
+  return { level: ["same_country", "same_region", "abroad"][sites.length ? rank(sites[0][2]) : 2], sites, countries: trial.countries };
 }
-function readPrompt(text) {
-  const index = S.trials.map((t) => `${t.id} | ${t.title} | ${t.conditions.join("; ")} | ${t.phases.join(",") || "-"}`).join("\n");
-  return `You are a careful clinical trial navigator. Read the patient summary (any language) and do two things.
+const SCOPES = [["anywhere", "Anywhere in the world"], ["region", "The patient's region"], ["country", "The patient's country"]];
+function inScope(t, scope, country) {
+  if (scope === "country" && country) return t.countries.includes(country);
+  if (scope === "region" && country) { const r = regionOf(country); return r ? t.countries.some((c) => regionOf(c) === r) : t.countries.includes(country); }
+  return true;
+}
 
-1. Extract the case. Only state what the text says; use null or [] when it is not stated. Write fields in English except "language", which names the summary's language in English.
-2. From the trial index (every recruiting cancer treatment trial with a site in Latin America), choose up to ${MAX_CANDIDATES} trials most worth checking for THIS patient: same cancer type and setting, matching biomarkers, fitting the line of therapy. Best first. Choose none if nothing fits.
+/* Step 1: read the case. */
+function readPrompt(text) {
+  return `You are a careful clinical trial navigator. Read the patient summary (any language) and extract the case. Only state what the text says; use null or [] when it is not stated. Write fields in English except "language", which names the summary's language in English.
+Also give search terms for a trial registry, in English: "cancer_terms" (the cancer type and its common synonyms and abbreviations, e.g. ["non-small cell lung cancer", "NSCLC", "lung adenocarcinoma", "lung cancer"]) and "biomarker_terms" (targetable mutations or markers stated, e.g. ["EGFR", "exon 19"]).
 
 Reply with only JSON:
-{"case": {"is_cancer_case": true, "language": "Spanish", "summary_en": "two sentences", "cancer_type": "", "stage": null, "biomarkers": [], "prior_treatments": [], "age": null, "sex": "female|male|unknown", "performance_status": null, "country": null, "city": null, "missing_info": ["facts trials usually require that are not stated"]}, "candidates": ["NCT..."]}
+{"case": {"is_cancer_case": true, "language": "Spanish", "summary_en": "two sentences", "cancer_type": "", "stage": null, "biomarkers": [], "prior_treatments": [], "age": null, "sex": "female|male|unknown", "performance_status": null, "country": null, "city": null, "missing_info": ["facts trials usually require that are not stated"]}, "cancer_terms": [], "biomarker_terms": []}
 
 <patient_summary>
 ${text}
-</patient_summary>
-
-<trial_index format="id | title | conditions | phases">
-${index}
-</trial_index>`;
+</patient_summary>`;
 }
+
+/* Step 2a: shortlist from the worldwide index without Claude: the cancer type must appear; biomarkers and later phases score higher. */
+function shortlist(cancerTerms, biomarkerTerms, scope, country, n = 60) {
+  const norm = (x) => String(x).toLowerCase().trim();
+  const ct = [...new Set(cancerTerms.map(norm).filter((w) => w.length >= 3))];
+  const bt = [...new Set(biomarkerTerms.map(norm).filter((w) => w.length >= 2))];
+  const word = (w) => new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}([^a-z0-9]|$)`);
+  const btRe = bt.map(word);
+  const basket = /solid tumou?r|advanced cancer|malignan|neoplasm/;
+  const scored = [];
+  for (const t of S.trials) {
+    if (!inScope(t, scope, country)) continue;
+    const hay = (t.title + " | " + t.conditions.join(" | ") + " | " + t.interventions.join(" | ")).toLowerCase();
+    const cancerHits = ct.filter((w) => hay.includes(w)).length;
+    const bioHits = btRe.filter((re) => re.test(hay)).length;
+    if (!cancerHits && !(bioHits && basket.test(hay))) continue;
+    const phase = t.phases.includes("PHASE3") ? 1.5 : t.phases.includes("PHASE2") ? 1 : t.phases.includes("PHASE1") ? 0.3 : 0.5;
+    scored.push([cancerHits * 3 + bioHits * 5 + phase + Math.min(t.n, 50) / 100, t]);
+  }
+  return scored.sort((a, b) => b[0] - a[0]).slice(0, n).map((x) => x[1]);
+}
+
+/* Step 2b: Claude picks the most promising few from the shortlist. */
+function pickPrompt(c, list) {
+  const lines = list.map((t) => `${t.id} | ${t.title} | ${t.conditions.join("; ")} | ${t.interventions.slice(0, 6).join("; ")} | ${t.phases.join(",") || "-"} | ${t.countries.slice(0, 6).join(", ")}${t.countries.length > 6 ? "…" : ""}`).join("\n");
+  return `You are an experienced oncology clinical trial navigator. From the candidate trials below (all recruiting, anywhere in the world), choose up to ${MAX_CANDIDATES} that give THIS patient the best chance.
+Prefer, in order: trials for this exact cancer type, stage and line of therapy; trials whose treatment targets the patient's biomarkers; the most promising treatments (strong rationale for this cancer, later-phase evidence or a novel targeted approach). Where the sites are matters only as a tie-breaker: patients can travel, and sponsors often pay for it.
+Leave out trials the patient clearly cannot join (for example first-line trials for a patient already treated, or the wrong subtype). Order best first.
+
+Reply with only JSON: {"candidates": ["NCT..."]}
+
+<patient>${JSON.stringify(c)}</patient>
+
+<candidates format="id | title | conditions | treatments | phases | countries">
+${lines}
+</candidates>`;
+}
+
+/* Step 3: judge each picked trial against its full eligibility criteria. */
 function assessPrompt(c, picks, lang) {
   const blocks = picks.map(({ t, p }) => {
     const crit = t.eligibility.length > MAX_CRITERIA_CHARS ? t.eligibility.slice(0, MAX_CRITERIA_CHARS) + "\n[criteria truncated here; full list on ClinicalTrials.gov]" : t.eligibility;
@@ -396,24 +458,25 @@ function assessPrompt(c, picks, lang) {
 Title: ${t.title}
 Phase: ${t.phases.join(", ") || "not stated"}; interventions: ${t.interventions.join(", ") || "not stated"}
 Age ${t.min_age || "no minimum"} to ${t.max_age || "no maximum"}; sex: ${t.sex || "all"}
-Recruiting sites in: ${p.countries.join(", ")}; closest to the patient: ${p.level.replace("_", " ")}
+Recruiting sites in: ${p.countries.slice(0, 15).join(", ")}${p.countries.length > 15 ? ` and ${p.countries.length - 15} more countries` : ""}; closest to the patient: ${p.level.replace("_", " ")}
 Summary: ${t.summary.slice(0, 1500)}
 Eligibility criteria:
 ${crit}
 </trial>`;
   }).join("\n\n");
-  return `You are a careful clinical trial navigator. Judge each trial for this patient against its eligibility criteria, then explain the options to the patient and family.
+  return `You are a careful clinical trial navigator. Judge each trial for this patient against its eligibility criteria, rate how promising it is for this patient, then explain the options to the patient and family.
 
 Rules:
-- "likely": no criterion clearly excludes the patient and key inclusion criteria are met. "possible": key facts missing or a doctor must confirm. "unlikely": a criterion clearly excludes the patient.
+- "fit": "likely" when no criterion clearly excludes the patient and key inclusion criteria are met; "possible" when key facts are missing or a doctor must confirm; "unlikely" when a criterion clearly excludes the patient.
+- "promise": "high", "medium" or "low": how strong a chance this treatment offers THIS patient compared with the other options, judged from how well it targets this cancer and these biomarkers and from the trial's phase and design. Not about distance.
 - reasons_for, reasons_against and to_confirm are in English and cite the specific criterion.
-- plain_summary, patient_message, questions_for_doctor and enrollment_checklist are in ${lang || c.language || "the patient's language"}, simple enough for a family with no medical training.
+- plain_summary (what the trial tests and why it could help), why_promising (one sentence), patient_message, questions_for_doctor and enrollment_checklist are in ${lang || c.language || "the patient's language"}, simple enough for a family with no medical training.
 - Never promise a place or a benefit. Say the treating oncologist must confirm eligibility.
-- The enrollment checklist covers what usually blocks people: records and pathology, who pays for travel and routine care (ask the site; many sponsors reimburse travel), insurance, documents for crossing a border, and follow-up back home.
+- Trials may be in other countries. The enrollment checklist covers what usually blocks people: records and pathology (translated if needed), who pays for travel, lodging and routine care (ask the site; many sponsors reimburse travel), passport and medical visa, a companion, how long they would need to stay, and follow-up back home.
 - One assessment for every trial, using its exact id.
 
 Reply with only JSON:
-{"assessments": [{"id": "NCT...", "fit": "likely|possible|unlikely", "reasons_for": [], "reasons_against": [], "to_confirm": [], "plain_summary": ""}], "patient_message": "", "questions_for_doctor": [], "enrollment_checklist": []}
+{"assessments": [{"id": "NCT...", "fit": "likely|possible|unlikely", "promise": "high|medium|low", "why_promising": "", "reasons_for": [], "reasons_against": [], "to_confirm": [], "plain_summary": ""}], "patient_message": "", "questions_for_doctor": [], "enrollment_checklist": []}
 
 <patient>
 ${JSON.stringify(c, null, 2)}
@@ -433,10 +496,12 @@ const SAMPLE_ERRORS = {
   invalid_json: "Claude's answer came back in the wrong format. Try again.",
   bad_key: "Your Anthropic API key was rejected. Check it in Settings.",
   no_credit: "Your Anthropic account has no credit. Add funds at console.anthropic.com, then try again.",
+  data: "Couldn't load trial details. Check your connection and try again.",
 };
 const sampleError = (e) => SAMPLE_ERRORS[e?.code] || "Couldn't reach Claude. Try again.";
+const PROMISE_RANK = { high: 0, medium: 1, low: 2 };
 
-async function runMatch(M = S.match, lang = null) {
+async function runMatch(M = S.match, lang = null, scope = M.scope || "anywhere", homeCountry = null) {
   const text = M.text.trim();
   if (!text) { M.error = "Paste a patient summary first."; return renderView(); }
   if (text.length > 20000) { M.error = "That summary is very long. Shorten it to the key facts."; return renderView(); }
@@ -445,22 +510,32 @@ async function runMatch(M = S.match, lang = null) {
     const first = await S.sample.json(readPrompt(text), { signal: M.ctl.signal });
     const c = first?.case;
     if (!c || typeof c !== "object") throw { code: "invalid_json" };
-    let matches = [], second = {};
+    const home = homeCountry || c.country;
+    let matches = [], second = {}, searched = 0;
     if (c.is_cancer_case !== false) {
-      const ids = [...new Set((Array.isArray(first.candidates) ? first.candidates : []).map(String))].filter((id) => S.byId.has(id)).slice(0, MAX_CANDIDATES);
-      const picks = ids.map((id) => { const t = S.byId.get(id); return { t, p: proximity(t, c.country) }; });
-      if (picks.length) {
-        M.step = "assess"; renderView();
-        second = await S.sample.json(assessPrompt(c, picks, lang), { signal: M.ctl.signal }) || {};
-        const byId = new Map((second.assessments || []).map((a) => [String(a.id), a]));
-        matches = picks.filter(({ t }) => byId.has(t.id)).map(({ t, p }) => {
-          const a = byId.get(t.id);
-          return { id: t.id, fit: ["likely", "possible", "unlikely"].includes(a.fit) ? a.fit : "possible", proximity: p.level,
-            plain_summary: String(a.plain_summary || ""), reasons_for: arr(a.reasons_for), reasons_against: arr(a.reasons_against), to_confirm: arr(a.to_confirm) };
-        }).sort((x, y) => FIT_RANK[x.fit] - FIT_RANK[y.fit] || PROX_RANK[x.proximity] - PROX_RANK[y.proximity]);
+      M.step = "search"; renderView();
+      const cancerTerms = [...arr(first.cancer_terms), c.cancer_type || ""].filter(Boolean);
+      const list = shortlist(cancerTerms, [...arr(first.biomarker_terms), ...arr(c.biomarkers)], scope, home);
+      searched = list.length;
+      if (list.length) {
+        const pick = await S.sample.json(pickPrompt(c, list), { signal: M.ctl.signal });
+        const ids = [...new Set(arr(pick?.candidates))].filter((id) => S.byId.has(id)).slice(0, MAX_CANDIDATES);
+        if (ids.length) {
+          M.step = "assess"; renderView();
+          try { await loadDetails(ids); } catch { throw { code: "data" }; }
+          const picks = ids.filter((id) => S.full.has(id)).map((id) => { const t = S.full.get(id); return { t, p: proximity(t, home) }; });
+          second = await S.sample.json(assessPrompt(c, picks, lang), { signal: M.ctl.signal }) || {};
+          const byId = new Map((second.assessments || []).map((a) => [String(a.id), a]));
+          matches = picks.filter(({ t }) => byId.has(t.id)).map(({ t, p }) => {
+            const a = byId.get(t.id);
+            return { id: t.id, fit: ["likely", "possible", "unlikely"].includes(a.fit) ? a.fit : "possible", promise: ["high", "medium", "low"].includes(a.promise) ? a.promise : "medium",
+              why_promising: String(a.why_promising || ""), proximity: p.level, plain_summary: String(a.plain_summary || ""),
+              reasons_for: arr(a.reasons_for), reasons_against: arr(a.reasons_against), to_confirm: arr(a.to_confirm) };
+          }).sort((x, y) => FIT_RANK[x.fit] - FIT_RANK[y.fit] || PROMISE_RANK[x.promise] - PROMISE_RANK[y.promise] || PROX_RANK[x.proximity] - PROX_RANK[y.proximity]);
+        }
       }
     }
-    M.result = { text, case: c, matches, message: String(second.patient_message || ""), questions: arr(second.questions_for_doctor),
+    M.result = { text, case: c, matches, scope, searched, message: String(second.patient_message || ""), questions: arr(second.questions_for_doctor),
       checklist: arr(second.enrollment_checklist), matched_at: now() };
   } catch (e) {
     M.error = e?.code === "cancelled" ? "Stopped." : sampleError(e);
@@ -476,7 +551,7 @@ async function saveProfile(d) {
   const clinical = d.role === "clinical";
   const body = clinical
     ? { role: "clinical", name: d.name.trim().slice(0, 80), title: d.title, specialty: d.specialty, institution: d.institution.trim().slice(0, 120), country: d.country, languages: d.languages.trim().slice(0, 120), updated_at: now() }
-    : { role: "patient", name: d.name.trim().slice(0, 60), relation: d.relation, language: d.language, country: d.country, city: d.city.trim().slice(0, 80), updated_at: now() };
+    : { role: "patient", name: d.name.trim().slice(0, 60), relation: d.relation, language: d.language, country: d.country, city: d.city.trim().slice(0, 80), travel: d.travel || "anywhere", updated_at: now() };
   await S.db.collection(S.myColl).doc("profile").set(body);
   // Clinicians are listed so colleagues see who wrote an opinion; patients are never listed.
   const memberRef = S.db.collection("members").doc(S.me?.id || "local");
@@ -656,9 +731,12 @@ Reply with only JSON: {"document_type": "", "facts": []}`, { images: [img], cach
 }
 
 function viewEnroll(r) {
-  const ctx = enrollCtx(r.owner), t = S.byId.get(r.trial);
+  const ctx = enrollCtx(r.owner);
   const wrap = h("div", { class: "view" });
   if (!S.trials.length) { wrap.append(h("p", { class: "muted" }, "Loading…")); return wrap; }
+  need([r.trial]);
+  if (S.byId.has(r.trial) && !S.full.has(r.trial)) { wrap.append(h("p", { class: "muted" }, "Loading trial details…")); return wrap; }
+  const t = S.full.get(r.trial);
   if (!ctx || !t) { wrap.append(h("div", { class: "card empty" }, h("p", {}, "This enrollment isn't available. The trial or the patient record may have been removed."), h("a", { class: "btn", href: "#home" }, "Go home"))); return wrap; }
   const e = enrollmentFor(ctx.owner, t.id);
   const W = S.enr[`${ctx.owner}-${t.id}`] ||= { running: "", error: "", answers: {}, note: "" };
@@ -929,7 +1007,7 @@ function loadingOr(key, fn) {
 }
 
 function greeting() { const hr = new Date().getHours(); return hr < 12 ? "Good morning" : hr < 19 ? "Good afternoon" : "Good evening"; }
-const sitesIn = (t, country) => t.sites.some((x) => x[2] === country);
+const sitesIn = (t, country) => t.countries.includes(country);
 
 /* Horizontal bar chart: label, bar to scale, count. Real counts from the trial index. */
 function bars(rows, onPick) {
@@ -937,10 +1015,9 @@ function bars(rows, onPick) {
   return h("div", { class: "bars" }, ...rows.map(([label, n]) => h(onPick ? "button" : "div", { class: "bar-row", type: onPick ? "button" : null, onclick: onPick ? () => onPick(label) : null },
     h("span", { class: "bar-label" }, label), h("span", { class: "bar-track" }, h("span", { class: "bar-fill", style: `width:${(n / max * 100).toFixed(1)}%` })), h("span", { class: "bar-n" }, String(n)))));
 }
-function countryRows(limit = 8) {
-  const latam = new Set([...REGIONS["South America"], ...REGIONS["Central America & Caribbean"]]);
+function countryRows(limit = 8, only = null) {
   const counts = new Map();
-  for (const t of S.trials) for (const c of new Set(t.sites.map((x) => x[2]))) if (latam.has(c)) counts.set(c, (counts.get(c) || 0) + 1);
+  for (const t of S.trials) for (const c of t.countries) if (!only || only.has(c)) counts.set(c, (counts.get(c) || 0) + 1);
   return [...counts].sort((a, b) => b[1] - a[1]).slice(0, limit);
 }
 function cancerRows(limit = 8) {
@@ -1050,7 +1127,7 @@ function homeClinical() {
           h("a", { class: "small", href: "#trials", onclick: (e) => { e.preventDefault(); openDirectory({ country: P.country || "" }); } }, "All")),
         S.trials.length ? nearList(trialsNear(P.country, ""), P.country) : h("p", { class: "muted" }, "Loading…")),
       h("div", { class: "stack", style: "gap:18px" },
-        h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "Recruiting trials by country"), h("span", { class: "small muted" }, "Latin America")),
+        h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "Recruiting trials by country"), h("span", { class: "small muted" }, "Worldwide")),
           S.trials.length ? bars(countryRows(6), (c) => openDirectory({ country: c })) : h("p", { class: "muted" }, "Loading…")),
         h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "By cancer type"), h("span", { class: "small muted" }, "Select to browse")),
           S.trials.length ? bars(cancerRows(6), (c) => openDirectory({ q: c.split(" ")[0].toLowerCase() })) : h("p", { class: "muted" }, "Loading…")))),
@@ -1067,21 +1144,20 @@ function trialsNear(country, cancerText, n = 5) {
   const region = regionOf(country);
   const inScope = (x) => x[2] === country;
   const inRegion = (x) => region && regionOf(x[2]) === region;
-  const local = S.trials.some((t) => t.sites.some(inScope));
-  const keep = local ? inScope : inRegion;
-  const rows = S.trials.filter((t) => t.sites.some(keep)).map((t) => ({ t,
+  const local = S.trials.some((t) => t.countries.some((c) => inScope([null, null, c])));
+  const keep = (c) => (local ? inScope : inRegion)([null, null, c]);
+  const rows = S.trials.filter((t) => t.countries.some(keep)).map((t) => ({ t,
       fits: group ? group[1].test((t.title + " " + t.conditions.join(" ")).toLowerCase()) : false,
-      here: t.sites.filter(keep) }))
-    .sort((a, b) => Number(b.fits) - Number(a.fits) || b.here.length - a.here.length).slice(0, n);
+      here: t.countries.filter(keep) }))
+    .sort((a, b) => Number(b.fits) - Number(a.fits) || b.t.n - a.t.n).slice(0, n);
   return { rows, scope: local ? "country" : rows.length ? "region" : "none" };
 }
 function nearList({ rows, scope }, country) {
   if (!rows.length) return h("p", { class: "small muted" }, country ? `No trial in the index has an open site in or near ${country} yet.` : "Add your country in your profile to see trials near you.");
   const note = scope === "region" ? h("p", { class: "small notice" }, `No trial has an open site in ${country} right now. These are the closest, in neighboring countries.`) : null;
   return h("div", { class: "near" }, note, ...rows.map(({ t, here }) => {
-    const cities = scope === "region"
-      ? [[...new Set(here.map((x) => x[2]))].join(", ") + ` · ${here.length} site${here.length === 1 ? "" : "s"}`]
-      : [...new Set(here.map((x) => x[1]).filter(Boolean))];
+    const others = t.countries.length - here.length;
+    const cities = [here.join(", ") + (others > 0 ? ` and ${others} other countr${others === 1 ? "y" : "ies"}` : "") + ` · ${t.n} site${t.n === 1 ? "" : "s"}`];
     return h("a", { class: "near-row", href: "#trials", onclick: (e) => { e.preventDefault(); openDirectory({ country, q: t.id.toLowerCase() }); } },
       h("span", { class: "near-title" }, t.title),
       h("span", { class: "small muted" }, [t.phases.map((p) => p.replace("PHASE", "Phase ")).join(", "), cities.slice(0, 3).join(", ") + (cities.length > 3 ? ` +${cities.length - 3}` : "")].filter(Boolean).join(" · ")));
@@ -1172,7 +1248,7 @@ function homePatient() {
 function viewProfile() {
   const first = !S.profile;
   const d = S.drafts.profile ||= { role: S.profile?.role || "", name: S.profile?.name || (S.standalone ? "" : S.me?.name || ""), relation: S.profile?.relation || "self",
-    language: S.profile?.language || (TR.lang !== "English" ? TR.lang : "Spanish"), country: S.profile?.country || "", city: S.profile?.city || "", title: S.profile?.title || CLINICAL_TITLES[0],
+    language: S.profile?.language || (TR.lang !== "English" ? TR.lang : "Spanish"), travel: S.profile?.travel || "anywhere", country: S.profile?.country || "", city: S.profile?.city || "", title: S.profile?.title || CLINICAL_TITLES[0],
     specialty: S.profile?.specialty || SPECIALTIES[0], institution: S.profile?.institution || "", languages: S.profile?.languages || "" };
   const wrap = h("div", { class: "view" }, head(first ? "Welcome to Eligo" : "Your profile", first ? "Tell us who you are, so Eligo shows you the right tools." : "Update how you appear and what Eligo shows you."));
   if (!S.myColl) { wrap.append(h("div", { class: "card" }, h("p", {}, "Sign in to Claude to create your profile."))); return wrap; }
@@ -1198,7 +1274,8 @@ function viewProfile() {
     ? [input("pf-name", "What should we call you? (optional)", "name", { placeholder: "A first name or nickname", maxlength: "60" }),
        select("pf-relation", "Who are you looking for trials for?", "relation", [["self", "Myself"], ["caregiver", "A family member or someone I care for"]]),
        langInput(),
-       select("pf-country", "Country", "country", countryOpts), input("pf-city", "City (optional)", "city", { maxlength: "80" })]
+       select("pf-country", "Country", "country", countryOpts), input("pf-city", "City (optional)", "city", { maxlength: "80" }),
+       select("pf-travel", "Where could you go for a trial?", "travel", [["anywhere", "Anywhere in the world (for the best option)"], ["region", "Countries in my region"], ["country", "Only my country"]])]
     : [input("pf-name", "Your name, as colleagues should see it", "name", { placeholder: "Dr. Ana Benítez", maxlength: "80" }),
        select("pf-title", "Role", "title", CLINICAL_TITLES), select("pf-specialty", "Specialty", "specialty", SPECIALTIES),
        input("pf-inst", "Hospital, center or company", "institution", { maxlength: "120" }), select("pf-country", "Country", "country", countryOpts),
@@ -1230,16 +1307,14 @@ function viewMyTrials() {
   const ta = h("textarea", { id: "self-text", placeholder: "For example: “Tengo cáncer de mama HER2 positivo, estadio IV, me trataron con trastuzumab y ya no responde…” You can also paste your doctor's report, without your name or ID number.", oninput: (e) => { M.text = e.target.value; } });
   ta.value = M.text || (!M.result && S.myMatch?.text) || "";
   if (!M.text && ta.value) M.text = ta.value;
-  const run = h("button", { class: "btn primary", disabled: M.running || !S.sample || !S.trials.length, onclick: () => runMatch(M, P.language) }, ic("match"), M.running ? "Searching…" : S.myMatch ? "Search again" : "Find trials");
+  const run = h("button", { class: "btn primary", disabled: M.running || !S.sample || !S.trials.length, onclick: () => runMatch(M, P.language, P.travel || "anywhere", P.country) }, ic("match"), M.running ? "Searching…" : S.myMatch ? "Search again" : "Find trials");
   wrap.append(h("div", { class: "card stack" },
     h("div", { class: "field" }, h("label", { for: "self-text" }, "Describe the diagnosis"), ta),
     h("div", { class: "row" }, run, M.running ? h("button", { class: "btn", onclick: () => M.ctl?.abort() }, "Stop") : null),
     !S.sample ? (S.standalone ? h("p", { class: "notice" }, "Add an Anthropic API key in ", h("a", { href: "#settings" }, "Settings"), " to search.") : h("p", { class: "muted small" }, "Searching uses Claude and runs when Eligo is opened in Claude.")) : null,
-    h("p", { class: "muted small" }, "Include the cancer type, stage, test results such as mutations, and the treatments so far. The more you include, the better the matches.")));
-  if (M.running) wrap.append(h("div", { class: "card steps" },
-    ...[["read", "Reading your description"], ["assess", "Checking each trial's requirements"]].map(([k, l]) =>
-      h("div", { "data-state": M.step === k ? "active" : (k === "read" && M.step === "assess") ? "done" : "todo" }, h("span", { class: "dot" }), l)),
-    h("p", { class: "muted small" }, "Usually 30 to 90 seconds.")));
+    h("p", { class: "muted small" }, "Include the cancer type, stage, test results such as mutations, and the treatments so far. The more you include, the better the matches."),
+    h("p", { class: "muted small" }, `Searching ${{ anywhere: "trials anywhere in the world", region: "trials in your region", country: "trials in your country" }[P.travel || "anywhere"]}. `, h("a", { href: "#profile" }, "Change"))));
+  if (M.running) wrap.append(progressSteps(M, [["read", "Reading your description"], ["search", "Searching trials around the world"], ["assess", "Checking each one's requirements"]]));
   if (M.error) wrap.append(h("p", { class: M.error === "Stopped." ? "muted" : "error" }, M.error));
   if (M.result) wrap.append(...resultBlocks(M.result, "self"));
   else if (S.myMatch) wrap.append(h("p", { class: "small muted" }, `Saved ${ago(S.myMatch.matched_at)}. Choose Start enrollment on a trial to check every requirement and get help enrolling.`), ...resultBlocks(S.myMatch, "self-saved", "me"));
@@ -1258,32 +1333,38 @@ function viewTrials() {
   });
   const search = h("input", { type: "text", id: "dir-q", placeholder: "Cancer type, drug, biomarker or NCT number", oninput: (e) => { D.q = e.target.value; D.limit = 25; renderView(); } });
   search.value = D.q;
-  const countries = [...new Set(S.trials.flatMap((t) => t.sites.map((x) => x[2])))].filter(Boolean).sort();
+  const countries = [...new Set(S.trials.flatMap((t) => t.countries))].filter(Boolean).sort();
   const country = h("select", { id: "dir-country", onchange: (e) => { D.country = e.target.value; D.limit = 25; renderView(); } },
     h("option", { value: "" }, "All countries"), ...countries.map((c) => h("option", { value: c, selected: D.country === c }, c)));
   const wrap = h("div", { class: "view" },
-    head(isPatient() ? "All trials" : "Trials", `Recruiting cancer treatment trials with at least one site in Latin America. Source: ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}.`),
+    head(isPatient() ? "All trials" : "Trials", `Recruiting cancer treatment trials worldwide. Source: ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}.`),
     h("div", { class: "card row", style: "gap:12px" },
       h("div", { class: "field", style: "flex:2;min-width:220px" }, h("label", { for: "dir-q" }, "Search"), search),
       h("div", { class: "field", style: "flex:1;min-width:180px" }, h("label", { for: "dir-country" }, "Site in"), country)),
     h("p", { class: "small muted" }, `${rows.length} trial${rows.length === 1 ? "" : "s"}${isPatient() ? ". To see which ones fit you, use My trials." : ""}`));
   if (!S.trials.length) { wrap.append(h("p", { class: "muted" }, "Loading trials…")); return wrap; }
   const listEl = h("div", { class: "card", style: "padding:0" }, ...rows.slice(0, D.limit).map((t) => {
-    const inCountry = D.country ? t.sites.filter((x) => x[2] === D.country) : [];
-    const countriesT = [...new Set(t.sites.map((x) => x[2]).filter(Boolean))];
-    const contact = t.contact ? [t.contact.name, t.contact.phone, t.contact.email].filter(Boolean).join(" · ") : "";
-    return h("details", { class: "dir-row" },
+    const countriesT = t.countries;
+    const body = h("div", { class: "stack dir-body" }, h("p", { class: "small muted" }, "Loading details…"));
+    const fill = () => {
+      const f = S.full.get(t.id); if (!f) return;
+      const inCountry = D.country ? f.sites.filter((x) => x[2] === D.country) : [];
+      const contact = f.contact ? [f.contact.name, f.contact.phone, f.contact.email].filter(Boolean).join(" · ") : "";
+      body.replaceChildren(
+        t.conditions.length ? h("p", { class: "small" }, h("span", { class: "muted" }, "Conditions: "), t.conditions.join(", ")) : "",
+        t.interventions.length ? h("p", { class: "small" }, h("span", { class: "muted" }, "Treatments tested: "), t.interventions.join(", ")) : "",
+        h("p", { class: "small" }, f.summary.length > 700 ? f.summary.slice(0, 700) + "…" : f.summary),
+        inCountry.length ? h("div", {}, h("div", { class: "label" }, `Sites in ${D.country}`), list(inCountry.map((x) => x.filter(Boolean).join(", ")))) : "",
+        h("details", {}, h("summary", {}, "Eligibility criteria"), h("p", { class: "small", style: "white-space:pre-wrap" }, f.eligibility)),
+        contact ? h("p", { class: "small" }, h("span", { class: "muted" }, "Contact: "), h("span", { translate: "no" }, contact)) : "",
+        h("a", { class: "small", href: `https://clinicaltrials.gov/study/${encodeURIComponent(t.id)}`, target: "_blank", rel: "noopener" }, "Full record on ClinicalTrials.gov ↗"));
+      applyTranslations();
+    };
+    return h("details", { class: "dir-row", ontoggle: (e) => { if (!e.target.open) return; if (S.full.has(t.id)) fill(); else loadDetails([t.id]).then(fill).catch(() => body.replaceChildren(h("p", { class: "small error" }, SAMPLE_ERRORS.data))); } },
       h("summary", {}, h("span", { class: "dir-title" }, t.title),
         h("span", { class: "row small muted", style: "gap:4px 12px" }, h("span", { class: "mono" }, t.id), t.phases.length ? h("span", {}, t.phases.map((p) => p.replace("PHASE", "Phase ").replace("EARLY_", "Early ")).join(", ")) : null,
-          h("span", {}, `${t.sites.length} site${t.sites.length === 1 ? "" : "s"} · ${countriesT.slice(0, 4).join(", ")}${countriesT.length > 4 ? ` +${countriesT.length - 4}` : ""}`))),
-      h("div", { class: "stack dir-body" },
-        t.conditions.length ? h("p", { class: "small" }, h("span", { class: "muted" }, "Conditions: "), t.conditions.join(", ")) : null,
-        t.interventions.length ? h("p", { class: "small" }, h("span", { class: "muted" }, "Treatments tested: "), t.interventions.join(", ")) : null,
-        h("p", { class: "small" }, t.summary.length > 700 ? t.summary.slice(0, 700) + "…" : t.summary),
-        inCountry.length ? h("div", {}, h("div", { class: "label" }, `Sites in ${D.country}`), list(inCountry.map((x) => x.filter(Boolean).join(", ")))) : null,
-        h("details", {}, h("summary", {}, "Eligibility criteria"), h("p", { class: "small", style: "white-space:pre-wrap" }, t.eligibility)),
-        contact ? h("p", { class: "small" }, h("span", { class: "muted" }, "Contact: "), contact) : null,
-        h("a", { class: "small", href: `https://clinicaltrials.gov/study/${encodeURIComponent(t.id)}`, target: "_blank", rel: "noopener" }, "Full record on ClinicalTrials.gov ↗")));
+          h("span", {}, `${t.n} site${t.n === 1 ? "" : "s"} · ${countriesT.slice(0, 4).join(", ")}${countriesT.length > 4 ? ` +${countriesT.length - 4}` : ""}`))),
+      body);
   }));
   if (rows.length) wrap.append(listEl);
   else wrap.append(h("div", { class: "card empty" }, h("p", {}, "No trial matches that search. Try a broader term, such as the cancer type only.")));
@@ -1309,17 +1390,21 @@ function viewMatch() {
     !S.sample ? (S.standalone
       ? h("p", { class: "notice" }, "Add your Anthropic API key in ", h("a", { href: "#settings" }, "Settings"), " to run matching.")
       : h("p", { class: "muted small" }, "Matching uses Claude and runs when this app is opened in Claude.")) : null,
-    h("p", { class: "muted small" }, `Searches ${S.trials.length || "…"} recruiting treatment trials with sites in Latin America. Use de-identified cases only.`)));
+    h("div", { class: "row small", style: "gap:8px" }, h("label", { for: "scope", class: "muted" }, "Look for trials in"),
+      h("select", { id: "scope", style: "width:auto", onchange: (e) => { M.scope = e.target.value; } }, ...SCOPES.map(([v, l]) => h("option", { value: v, selected: (M.scope || "anywhere") === v }, l)))),
+    h("p", { class: "muted small" }, `Searches ${S.trials.length ? S.trials.length.toLocaleString() : "…"} recruiting cancer treatment trials worldwide and ranks them by fit and how promising they are. Use de-identified cases only.`)));
 
-  if (M.running) wrap.append(h("div", { class: "card steps" },
-    ...[["read", "Reading the case and shortlisting trials"], ["assess", "Checking each trial's eligibility criteria"]].map(([k, l]) =>
-      h("div", { "data-state": M.step === k ? "active" : (k === "read" && M.step === "assess") ? "done" : "todo" }, h("span", { class: "dot" }), l)),
-    h("p", { class: "muted small" }, "Usually 30 to 90 seconds.")));
+  if (M.running) wrap.append(progressSteps(M, [["read", "Reading the case"], ["search", "Searching trials worldwide and choosing the most promising"], ["assess", "Checking each one's eligibility criteria"]]));
   if (M.error) wrap.append(h("p", { class: M.error === "Stopped." ? "muted" : "error" }, M.error));
   if (M.result) wrap.append(...resultBlocks(M.result, "patient"));
   return wrap;
 }
 
+function progressSteps(M, steps) {
+  const cur = steps.findIndex(([k]) => k === M.step);
+  return h("div", { class: "card steps" }, ...steps.map(([k, l], i) => h("div", { "data-state": i < cur ? "done" : i === cur ? "active" : "todo" }, h("span", { class: "dot" }), l)),
+    h("p", { class: "muted small" }, "Usually one to two minutes."));
+}
 function caseFacts(c) {
   const rows = [["Summary", c.summary_en], ["Cancer", [c.cancer_type, c.stage && `stage ${c.stage}`].filter(Boolean).join(", ")],
     ["Biomarkers", arr(c.biomarkers).join(", ") || "None stated"], ["Prior treatment", arr(c.prior_treatments).join(", ") || "None stated"],
@@ -1329,24 +1414,26 @@ function caseFacts(c) {
   return h("dl", { class: "facts" }, ...rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, String(v ?? ""))]));
 }
 function trialCard(m, owner) {
-  const t = S.byId.get(m.id);
+  need([m.id]);
+  const t = S.full.get(m.id) || S.byId.get(m.id);
   const title = t?.title || m.id;
   const p = t ? proximity(t, null) : null;
-  const sites = t ? t.sites : [];
+  const sites = t?.sites || [];
   const countries = p?.countries || [];
   const contact = t?.contact ? [t.contact.name, t.contact.phone, t.contact.email].filter(Boolean).join(" · ") : "";
   return h("article", { class: "card trial", dataset: { fit: m.fit } },
-    h("div", { class: "row" }, h("span", { class: "pill", "data-tone": m.fit }, m.fit), h("span", { class: "chip" }, PROX_LABEL[m.proximity] || ""),
+    h("div", { class: "row" }, h("span", { class: "pill", "data-tone": m.fit }, m.fit), m.promise ? h("span", { class: "chip" }, `${m.promise[0].toUpperCase()}${m.promise.slice(1)} promise`) : null, h("span", { class: "chip" }, PROX_LABEL[m.proximity] || ""),
       ...(t?.phases || []).map((ph) => h("span", { class: "chip" }, ph.replace("PHASE", "Phase ").replace("EARLY_", "Early "))), h("span", { class: "mono muted" }, m.id)),
     h("div", { class: "t-title" }, title),
     m.plain_summary ? h("p", {}, m.plain_summary) : null,
-    t ? h("p", { class: "muted small" }, `${sites.length} recruiting site${sites.length === 1 ? "" : "s"} in ${countries.slice(0, 6).join(", ")}${countries.length > 6 ? ` and ${countries.length - 6} more` : ""}`) : null,
+    m.why_promising ? h("p", { class: "small" }, h("b", {}, m.promise === "high" ? "Why it could be a strong option: " : "Why it's worth a look: "), m.why_promising) : null,
+    t ? h("p", { class: "muted small" }, `${t.n} recruiting site${t.n === 1 ? "" : "s"} in ${countries.slice(0, 6).join(", ")}${countries.length > 6 ? ` and ${countries.length - 6} more` : ""}`) : null,
     h("details", {}, h("summary", {}, "Why, and what a doctor should confirm"),
       h("div", { class: "stack" },
         h("div", {}, h("div", { class: "label" }, "For"), list(m.reasons_for)),
         h("div", {}, h("div", { class: "label" }, "Against"), list(m.reasons_against)),
         h("div", {}, h("div", { class: "label" }, "Doctor should confirm"), list(m.to_confirm)),
-        t ? h("div", {}, h("div", { class: "label" }, "Sites"), list(sites.slice(0, 8).map((s) => s.filter(Boolean).join(", ")))) : null,
+        sites.length ? h("div", {}, h("div", { class: "label" }, "Sites"), list(proximity(t, null).sites.slice(0, 8).map((s) => s.filter(Boolean).join(", ")))) : null,
         contact ? h("div", {}, h("div", { class: "label" }, "Trial contact"), h("p", { class: "small" }, contact)) : null)),
     h("div", { class: "row", style: "justify-content:space-between" },
       h("a", { href: `https://clinicaltrials.gov/study/${encodeURIComponent(m.id)}`, target: "_blank", rel: "noopener", class: "small" }, "Open on ClinicalTrials.gov ↗"),
@@ -1611,9 +1698,10 @@ renderShell(); renderView();
 (async () => {
   try {
     // The single-file build (Eligo.html) carries the snapshot inline; the website and Claude versions fetch it.
-    const data = window.ELIGO_TRIALS || await (await fetch("trials.json")).json();
-    S.trials = data.trials; S.byId = new Map(S.trials.map((t) => [t.id, t])); S.snapshotDate = data.generated_at;
-    S.countries = new Set(S.trials.flatMap((t) => t.sites.map((s) => s[2]))).size;
+    const data = window.ELIGO_INDEX || await (await fetch(`${DATA_BASE}index.json`)).json();
+    S.trials = data.trials.map(([id, title, conditions, interventions, phases, countries, n]) => ({ id, title, conditions, interventions, phases, countries, n }));
+    S.byId = new Map(S.trials.map((t) => [t.id, t])); S.snapshotDate = data.generated_at;
+    S.countries = new Set(S.trials.flatMap((t) => t.countries)).size;
   } catch { S.snapshotDate = ""; }
   scheduleRender();
 })();
