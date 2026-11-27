@@ -55,42 +55,40 @@
   button, input, textarea, select { font: inherit; color: inherit; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  /* Shell */
-  .app { display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); min-height: 100vh; }
-  .side { position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--line); background: var(--surface);
-    padding: 20px 14px; display: flex; flex-direction: column; gap: 22px; }
-  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); padding: 0 8px; }
-  .brand b { font: 800 1.25rem var(--font-display); letter-spacing: -0.02em; }
-  .nav { display: flex; flex-direction: column; gap: 2px; }
-  .nav a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; color: var(--muted); text-decoration: none; font-weight: 500; }
+  /* Shell: one sticky bar across the top; brand left, sections in a row, account right. */
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+  .topnav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
+  .topnav .inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 28px; padding-block: 10px;
+    padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); flex: none; }
+  .brand b { font: 800 1.2rem var(--font-display); letter-spacing: -0.02em; }
+  .nav { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; color: var(--muted); text-decoration: none; font-weight: 500; white-space: nowrap; }
   .nav a:hover { background: var(--surface-2); color: var(--fg); }
   .nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-ink); }
-  .nav svg { width: 18px; height: 18px; flex: none; }
-  .nav .count { margin-left: auto; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .side .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 8px; font-size: .9rem; color: var(--muted); }
+  .nav svg { width: 17px; height: 17px; flex: none; }
+  .nav .short { display: none; }
+  .nav .count { font-size: .72rem; font-weight: 600; background: var(--surface-2); color: var(--muted); border-radius: 999px; padding: 0 7px; font-variant-numeric: tabular-nums; }
+  .nav a[aria-current="page"] .count { background: var(--surface); }
+  .me { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: .9rem; color: var(--muted); flex: none; }
   .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; background: var(--surface-2); }
-  .topbar, .tabs { display: none; }
   main { min-width: 0; }
-  .view { max-width: 980px; margin: 0 auto; padding-block: 28px 80px;
+  .view { max-width: 1180px; margin: 0 auto; padding-block: 28px 80px;
     padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
     display: flex; flex-direction: column; gap: 22px; }
   .view-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
   .view-head .sub { color: var(--muted); margin-top: 4px; max-width: 62ch; }
 
   @media (max-width: 760px) {
-    .app { grid-template-columns: minmax(0, 1fr); }
-    .side { display: none; }
-    body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
-    .topbar { display: flex; align-items: center; justify-content: space-between; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
-      background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 10px;
-      padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; inset: auto 0 0 0; z-index: 5; background: var(--surface);
-      border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px);
-      padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
-    .tabs a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; font-size: .72rem; color: var(--muted); text-decoration: none; }
-    .tabs a[aria-current="page"] { color: var(--accent); }
-    .tabs svg { width: 20px; height: 20px; }
-    .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 110px; }
+    /* Phone: brand and account on the first row, the sections in a horizontal row below. */
+    .topnav .inner { flex-wrap: wrap; gap: 8px 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .nav { order: 3; flex-basis: 100%; margin-inline: -4px; }
+    .nav a { padding: 7px 10px; font-size: .9rem; }
+    .nav svg, .nav .long { display: none; }
+    .nav .short { display: inline; }
+    .me span.name { display: none; }
+    .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 60px; }
     h1 { font-size: 1.45rem; }
   }
 
@@ -192,26 +190,17 @@
 </style>
 
 <div class="app">
-  <aside class="side">
-    <a class="brand" href="#home" aria-label="Puente home">
-      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 22c3.5-8 18.5-8 22 0" stroke="var(--accent-fg)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M9 22v-4M16 22v-6M23 22v-4" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round"/></svg>
-      <b>Puente</b>
-    </a>
-    <nav class="nav" id="side-nav"></nav>
-    <div class="me" id="me-box"></div>
-  </aside>
-
-  <main>
-    <header class="topbar">
-      <a class="brand" href="#home">
-        <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 22c3.5-8 18.5-8 22 0" stroke="var(--accent-fg)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M9 22v-4M16 22v-6M23 22v-4" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round"/></svg>
+  <header class="topnav">
+    <div class="inner">
+      <a class="brand" href="#home" aria-label="Puente home">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 22c3.5-8 18.5-8 22 0" stroke="var(--accent-fg)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M9 22v-4M16 22v-6M23 22v-4" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round"/></svg>
         <b>Puente</b>
       </a>
-      <span id="me-top"></span>
-    </header>
-    <div id="view"></div>
-  </main>
-  <nav class="tabs" id="tab-nav"></nav>
+      <nav class="nav" id="side-nav" aria-label="Sections"></nav>
+      <div class="me" id="me-box"></div>
+    </div>
+  </header>
+  <main><div id="view"></div></main>
 </div>
 
 <script>
@@ -469,13 +458,11 @@ function renderShell() {
   const cur = section(route());
   const counts = { patients: S.patients.length, boards: S.boards.filter((b) => b.status === "open").length };
   $("#side-nav").replaceChildren(...NAV.map(([k, label]) => h("a", { href: `#${k}`, "aria-current": cur === k ? "page" : null },
-    ic(k), label, counts[k] ? h("span", { class: "count" }, String(counts[k])) : null)));
-  $("#tab-nav").replaceChildren(...NAV.map(([k, label]) => h("a", { href: `#${k}`, "aria-current": cur === k ? "page" : null }, ic(k), label.replace("Tumor boards", "Boards"))));
+    ic(k), k === "boards" ? [h("span", { class: "long" }, label), h("span", { class: "short" }, "Boards")] : label, counts[k] ? h("span", { class: "count" }, String(counts[k])) : null)));
   const me = S.me;
   const settings = S.standalone ? h("a", { href: "#settings", class: "btn ghost", "aria-current": cur === "settings" ? "page" : null }, "Settings") : null;
-  const meEl = () => me?.id ? [h("img", { class: "avatar", src: safeUrl(me.avatarUrl), alt: "" }), h("span", {}, me.name || "You")] : [h("span", { class: "small" }, "Viewing")];
-  $("#me-box").replaceChildren(...meEl(), settings || "");
-  $("#me-top").replaceChildren(...(S.standalone ? [h("a", { href: "#settings", class: "btn ghost" }, "Settings")] : me?.id ? [h("img", { class: "avatar", src: safeUrl(me.avatarUrl), alt: me.name || "You" })] : []));
+  const meEl = () => me?.id ? [h("img", { class: "avatar", src: safeUrl(me.avatarUrl), alt: "" }), h("span", { class: "name" }, me.name || "You")] : [];
+  $("#me-box").replaceChildren(settings || "", ...meEl());
 }
 
 let pending = false;
