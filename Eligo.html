@@ -159,6 +159,32 @@ new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
   .steps-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
   .scope { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+  .kpi { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; text-decoration: none; color: var(--muted); border-right: 1px solid var(--line); font-size: .86rem; }
+  .kpi:last-child { border-right: 0; }
+  .kpi:hover { background: var(--surface-2); }
+  .kpi b { font-size: 1.5rem; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .kpi-inline b { font-size: 1.4rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bars { display: flex; flex-direction: column; gap: 2px; }
+  .bar-row { display: grid; grid-template-columns: minmax(90px, 150px) minmax(0, 1fr) 36px; gap: 10px; align-items: center; padding: 4px 6px; margin: 0 -6px;
+    border: 0; background: none; text-align: left; border-radius: 3px; font-size: .86rem; color: var(--fg); }
+  button.bar-row { cursor: pointer; } button.bar-row:hover { background: var(--surface-2); }
+  .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { height: 8px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+  .bar-fill { display: block; height: 100%; background: var(--accent); border-radius: 2px; }
+  .bar-n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .role-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; max-width: 760px; }
+  .role-card { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 16px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); cursor: pointer; }
+  .role-card:hover { background: var(--surface-2); }
+  .role-card[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
+  .dir-row { border-bottom: 1px solid var(--line); }
+  .dir-row:last-child { border-bottom: 0; }
+  .dir-row > summary { list-style: none; cursor: pointer; padding: 12px 16px; display: flex; flex-direction: column; gap: 3px; color: var(--fg); }
+  .dir-row > summary::-webkit-details-marker { display: none; }
+  .dir-row > summary:hover { background: var(--surface-2); }
+  .dir-title { font-weight: 500; }
+  .dir-body { padding: 0 16px 16px; }
+
   /* Trials */
   .trial { display: flex; flex-direction: column; gap: 8px; }
   .trial .t-title { font-weight: 600; }
@@ -217,9 +243,24 @@ const ICONS = {
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
   chat: '<path d="M4 5h16v11H9l-5 4z"/>',
   spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>',
+  trials: '<path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3"/><path d="M7.5 15h9"/>',
+  mytrials: '<path d="M12 21s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 5.6-7 10-7 10z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
 };
 const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
-const NAV = [["home", "Home"], ["match", "Matcher"], ["patients", "Patients"], ["boards", "Tumor boards"]];
+// Sections per role: [route, label, short label for phones]
+const NAV_CLINICAL = [["home", "Home", "Home"], ["match", "Matcher", "Match"], ["patients", "Patients", "Patients"], ["boards", "Tumor boards", "Boards"], ["trials", "Trials", "Trials"]];
+const NAV_PATIENT = [["home", "Home", "Home"], ["mytrials", "My trials", "My trials"], ["trials", "All trials", "All trials"]];
+const CLINICAL_ROUTES = new Set(["match", "patients", "patient", "boards", "board"]);
+const CLINICAL_TITLES = ["Medical oncologist", "Hematologist", "Surgical oncologist", "Radiation oncologist", "Pathologist", "Radiologist", "Principal investigator", "Trial coordinator", "Research nurse", "Sponsor / CRO", "Other clinician"];
+const LANGUAGES = ["Spanish", "Portuguese", "English", "Guaraní", "French", "Japanese", "Other"];
+const COUNTRIES = [...REGIONS_LIST(), "Spain", "Portugal", "Other"];
+function REGIONS_LIST() { return ["Argentina","Bolivia","Brazil","Chile","Colombia","Costa Rica","Dominican Republic","Ecuador","El Salvador","Guatemala","Honduras","Mexico","Nicaragua","Panama","Paraguay","Peru","Puerto Rico","Uruguay","Venezuela","United States","Canada"]; }
+const CANCER_GROUPS = [["Lung", /lung|nsclc|sclc/], ["Breast", /breast/], ["Colorectal", /colorectal|colon|rectal/], ["Prostate", /prostat/],
+  ["Lymphoma", /lymphoma/], ["Leukemia", /leukemia|leukaemia/], ["Myeloma", /myeloma/], ["Melanoma and skin", /melanoma|skin/],
+  ["Stomach and esophagus", /gastric|stomach|esophag|oesophag/], ["Liver", /hepatocellular|liver/], ["Pancreas", /pancrea/],
+  ["Gynecologic", /ovar|cervical|cervix|endometri|uter/], ["Head and neck", /head and neck|oral|laryn|pharyn/], ["Kidney and bladder", /renal|kidney|bladder|urothelial/],
+  ["Brain", /glioma|glioblastoma|brain/], ["Sarcoma", /sarcoma/]];
 const SAMPLES = {
   es: "Paciente femenina de 58 años, vive en Asunción, Paraguay. Diagnóstico de adenocarcinoma de pulmón (cáncer de pulmón de células no pequeñas) estadio IV con metástasis óseas, diagnosticado hace 14 meses. Mutación EGFR deleción del exón 19. Recibió osimertinib durante 12 meses con progresión de la enfermedad en la última tomografía. ECOG 1. Sin metástasis cerebrales. Hipertensión controlada. Nunca fumó.",
   pt: "Paciente de 46 anos, sexo feminino, mora em Curitiba, Brasil. Câncer de mama HER2 positivo, receptores hormonais negativos, estágio IV com metástases hepáticas. Tratada com trastuzumabe e pertuzumabe com docetaxel na primeira linha e depois trastuzumabe deruxtecan, com progressão. ECOG 0. Função cardíaca normal (FEVE 60%).",
@@ -272,8 +313,12 @@ const S = {
   db: null, user: null, sample: null, me: null, canWrite: true,
   patients: [], boards: [], opinions: [], loaded: { patients: false, boards: false, opinions: false }, dbError: "",
   match: { text: "", running: false, step: "", error: "", result: null, ctl: null, forPatient: null },
+  self: { text: "", running: false, step: "", error: "", result: null, ctl: null },
+  profile: null, profileLoaded: false, myMatch: null, members: {}, myColl: null,
+  dir: { q: "", country: "", limit: 25 },
   drafts: {},
 };
+const isPatient = () => S.profile?.role === "patient";
 
 /* ---------------- matching (Claude via the viewer's account) ---------------- */
 function regionOf(country) {
@@ -307,7 +352,7 @@ ${text}
 ${index}
 </trial_index>`;
 }
-function assessPrompt(c, picks) {
+function assessPrompt(c, picks, lang) {
   const blocks = picks.map(({ t, p }) => {
     const crit = t.eligibility.length > MAX_CRITERIA_CHARS ? t.eligibility.slice(0, MAX_CRITERIA_CHARS) + "\n[criteria truncated here; full list on ClinicalTrials.gov]" : t.eligibility;
     return `<trial id="${t.id}">
@@ -325,7 +370,7 @@ ${crit}
 Rules:
 - "likely": no criterion clearly excludes the patient and key inclusion criteria are met. "possible": key facts missing or a doctor must confirm. "unlikely": a criterion clearly excludes the patient.
 - reasons_for, reasons_against and to_confirm are in English and cite the specific criterion.
-- plain_summary, patient_message, questions_for_doctor and enrollment_checklist are in ${c.language || "the patient's language"}, simple enough for a family with no medical training.
+- plain_summary, patient_message, questions_for_doctor and enrollment_checklist are in ${lang || c.language || "the patient's language"}, simple enough for a family with no medical training.
 - Never promise a place or a benefit. Say the treating oncologist must confirm eligibility.
 - The enrollment checklist covers what usually blocks people: records and pathology, who pays for travel and routine care (ask the site; many sponsors reimburse travel), insurance, documents for crossing a border, and follow-up back home.
 - One assessment for every trial, using its exact id.
@@ -354,8 +399,7 @@ const SAMPLE_ERRORS = {
 };
 const sampleError = (e) => SAMPLE_ERRORS[e?.code] || "Couldn't reach Claude. Try again.";
 
-async function runMatch() {
-  const M = S.match;
+async function runMatch(M = S.match, lang = null) {
   const text = M.text.trim();
   if (!text) { M.error = "Paste a patient summary first."; return renderView(); }
   if (text.length > 20000) { M.error = "That summary is very long. Shorten it to the key facts."; return renderView(); }
@@ -370,7 +414,7 @@ async function runMatch() {
       const picks = ids.map((id) => { const t = S.byId.get(id); return { t, p: proximity(t, c.country) }; });
       if (picks.length) {
         M.step = "assess"; renderView();
-        second = await S.sample.json(assessPrompt(c, picks), { signal: M.ctl.signal }) || {};
+        second = await S.sample.json(assessPrompt(c, picks, lang), { signal: M.ctl.signal }) || {};
         const byId = new Map((second.assessments || []).map((a) => [String(a.id), a]));
         matches = picks.filter(({ t }) => byId.has(t.id)).map(({ t, p }) => {
           const a = byId.get(t.id);
@@ -390,6 +434,22 @@ async function runMatch() {
 const arr = (x) => Array.isArray(x) ? x.map(String) : [];
 
 /* ---------------- data writes ---------------- */
+async function saveProfile(d) {
+  if (!S.myColl) throw { code: "no_identity" };
+  const clinical = d.role === "clinical";
+  const body = clinical
+    ? { role: "clinical", name: d.name.trim().slice(0, 80), title: d.title, specialty: d.specialty, institution: d.institution.trim().slice(0, 120), country: d.country, languages: d.languages.trim().slice(0, 120), updated_at: now() }
+    : { role: "patient", name: d.name.trim().slice(0, 60), relation: d.relation, language: d.language, country: d.country, city: d.city.trim().slice(0, 80), updated_at: now() };
+  await S.db.collection(S.myColl).doc("profile").set(body);
+  // Clinicians are listed so colleagues see who wrote an opinion; patients are never listed.
+  const memberRef = S.db.collection("members").doc(S.me?.id || "local");
+  if (clinical) await memberRef.set({ name: body.name, title: body.title, specialty: body.specialty, institution: body.institution, country: body.country, updated_at: body.updated_at });
+  else if (S.members[S.me?.id || "local"]) await memberRef.delete();
+}
+async function saveMyMatch(R) {
+  await S.db.collection(S.myColl).doc("match").set({ text: R.text, case: R.case, matches: R.matches, message: R.message, questions: R.questions, checklist: R.checklist, matched_at: R.matched_at });
+  S.self.result = null;
+}
 function dbFail(e) {
   if (e?.code === "quota_exceeded") return "Storage is full. Delete old patients or boards, then try again.";
   if (e?.code === "invalid_argument") { S.canWrite = false; return "You can view this workspace but not change it. Ask the owner for Contributor access."; }
@@ -450,7 +510,7 @@ function route() {
   const raw = (location.hash || "#home").slice(1);
   if (raw.startsWith("patient-")) return { name: "patient", id: raw.slice(8) };
   if (raw.startsWith("board-")) return { name: "board", id: raw.slice(6) };
-  return { name: ["home", "match", "patients", "boards", "settings"].includes(raw) ? raw : "home" };
+  return { name: ["home", "match", "patients", "boards", "settings", "profile", "trials", "mytrials"].includes(raw) ? raw : "home" };
 }
 const go = (hash) => { if (location.hash !== "#" + hash) location.hash = hash; else renderView(); };
 const section = (r) => r.name === "patient" ? "patients" : r.name === "board" ? "boards" : r.name;
@@ -458,12 +518,15 @@ const section = (r) => r.name === "patient" ? "patients" : r.name === "board" ? 
 function renderShell() {
   const foot = $("#foot"); if (foot) foot.textContent = `Eligo · decision support for oncologists, not medical advice · trial data from ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}`;
   const cur = section(route());
-  const counts = { patients: S.patients.length, boards: S.boards.filter((b) => b.status === "open").length };
-  $("#side-nav").replaceChildren(...NAV.map(([k, label]) => h("a", { href: `#${k}`, "aria-current": cur === k ? "page" : null },
-    ic(k), k === "boards" ? [h("span", { class: "long" }, label), h("span", { class: "short" }, "Boards")] : label, counts[k] ? h("span", { class: "count" }, String(counts[k])) : null)));
+  const counts = isPatient() ? {} : { patients: S.patients.length, boards: S.boards.filter((b) => b.status === "open").length };
+  const nav = !S.profile ? [] : isPatient() ? NAV_PATIENT : NAV_CLINICAL;
+  $("#side-nav").replaceChildren(...nav.map(([k, label, short]) => h("a", { href: `#${k}`, "aria-current": cur === k ? "page" : null },
+    ic(k), h("span", { class: "long" }, label), h("span", { class: "short" }, short), counts[k] ? h("span", { class: "count" }, String(counts[k])) : null)));
   const me = S.me;
   const settings = S.standalone ? h("a", { href: "#settings", class: "btn ghost", "aria-current": cur === "settings" ? "page" : null }, "Settings") : null;
-  const meEl = () => me?.id ? [h("img", { class: "avatar", src: safeUrl(me.avatarUrl), alt: "" }), h("span", { class: "name" }, me.name || "You")] : [];
+  const who = S.profile?.name || "My profile";
+  const meEl = () => S.profile ? [h("a", { href: "#profile", class: "row", style: "gap:8px;text-decoration:none;color:inherit", title: "Your profile" },
+    h("img", { class: "avatar", src: safeUrl(me?.avatarUrl), alt: "" }), h("span", { class: "name" }, who))] : [];
   $("#me-box").replaceChildren(settings || "", ...meEl());
 }
 
@@ -478,7 +541,13 @@ function renderView(fromData = false) {
   const focusedId = active && view.contains(active) && active.id ? active.id : null;
   const sel = focusedId && "selectionStart" in active ? [active.selectionStart, active.selectionEnd] : null;
   const scroll = fromData ? window.scrollY : 0;
-  const node = { home: viewHome, match: viewMatch, patients: viewPatients, patient: viewPatient, boards: viewBoards, board: viewBoard, settings: viewSettings }[r.name](r);
+  let node;
+  if (r.name === "settings") node = viewSettings();
+  else if (!S.profileLoaded) node = h("div", { class: "view" }, h("p", { class: "muted" }, "Loading your profile…"));
+  else if (!S.profile || r.name === "profile") node = viewProfile();
+  else if (isPatient() && CLINICAL_ROUTES.has(r.name)) node = h("div", { class: "view" }, head("For clinical teams", "This part of Eligo is for doctors and clinical-trial staff."),
+    h("div", { class: "card stack" }, h("p", {}, "Your trial matches and next steps are under My trials."), h("a", { class: "btn primary", href: "#mytrials", style: "align-self:flex-start" }, "Go to My trials")));
+  else node = { home: viewHome, match: viewMatch, patients: viewPatients, patient: viewPatient, boards: viewBoards, board: viewBoard, trials: viewTrials, mytrials: viewMyTrials }[r.name](r);
   view.replaceChildren(node);
   if (focusedId) { const el = document.getElementById(focusedId); if (el) { el.focus({ preventScroll: true }); if (sel && "setSelectionRange" in el) try { el.setSelectionRange(...sel); } catch {} } }
   if (fromData) window.scrollTo(0, scroll);
@@ -496,8 +565,33 @@ function loadingOr(key, fn) {
   return fn();
 }
 
-function viewHome() {
-  const open = S.boards.filter((b) => b.status === "open");
+function greeting() { const hr = new Date().getHours(); return hr < 12 ? "Good morning" : hr < 19 ? "Good afternoon" : "Good evening"; }
+const sitesIn = (t, country) => t.sites.some((x) => x[2] === country);
+
+/* Horizontal bar chart: label, bar to scale, count. Real counts from the trial index. */
+function bars(rows, onPick) {
+  const max = Math.max(1, ...rows.map((r) => r[1]));
+  return h("div", { class: "bars" }, ...rows.map(([label, n]) => h(onPick ? "button" : "div", { class: "bar-row", type: onPick ? "button" : null, onclick: onPick ? () => onPick(label) : null },
+    h("span", { class: "bar-label" }, label), h("span", { class: "bar-track" }, h("span", { class: "bar-fill", style: `width:${(n / max * 100).toFixed(1)}%` })), h("span", { class: "bar-n" }, String(n)))));
+}
+function countryRows(limit = 8) {
+  const latam = new Set([...REGIONS["South America"], ...REGIONS["Central America & Caribbean"]]);
+  const counts = new Map();
+  for (const t of S.trials) for (const c of new Set(t.sites.map((x) => x[2]))) if (latam.has(c)) counts.set(c, (counts.get(c) || 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1]).slice(0, limit);
+}
+function cancerRows(limit = 8) {
+  return CANCER_GROUPS.map(([label, re]) => [label, S.trials.filter((t) => re.test((t.title + " " + t.conditions.join(" ")).toLowerCase())).length])
+    .filter((r) => r[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, limit);
+}
+function openDirectory(filters) { Object.assign(S.dir, { q: "", country: "", limit: 25 }, filters); go("trials"); }
+
+function viewHome() { return isPatient() ? homePatient() : homeClinical(); }
+
+function homeClinical() {
+  const P = S.profile;
+  const open = S.boards.filter((b) => b.status === "open")
+    .sort((a, b) => Number(b.specialties?.includes(P.specialty)) - Number(a.specialties?.includes(P.specialty)));
   const recent = S.patients.slice(0, 6);
   const newMatch = h("a", { class: "btn primary", href: "#match", onclick: () => { S.match.forPatient = null; } }, ic("plus"), "New match");
   const patientsBlock = loadingOr("patients", () => recent.length
@@ -511,33 +605,174 @@ function viewHome() {
         }))))
     : h("div", { class: "card empty" }, h("p", {}, "No patients yet. Run a match and save it to start a patient record."), newMatch.cloneNode(true)));
   const boardsBlock = loadingOr("boards", () => open.length
-    ? h("div", { class: "stack" }, ...open.slice(0, 5).map(boardRow))
+    ? h("div", { class: "stack" }, ...open.slice(0, 4).map(boardRow))
     : h("div", { class: "card empty" }, h("p", {}, "No cases are waiting for opinions. Post one from a patient record.")));
+  const sub = [P.title, P.institution, P.country].filter(Boolean).join(" · ");
 
   return h("div", { class: "view" },
-    head("Overview", "Clinical trial matching and remote tumor boards for cancer patients in Latin America.", newMatch),
-    h("div", { class: "source" },
-      h("span", {}, "Trial index: ", h("b", {}, S.trials.length ? String(S.trials.length) : "…"), " recruiting treatment trials"),
-      h("span", {}, h("b", {}, S.countries ? String(S.countries) : "…"), " countries with open sites"),
-      h("span", {}, "Source: ClinicalTrials.gov", S.snapshotDate ? `, retrieved ${S.snapshotDate}` : "")),
+    head(`${greeting()}${P.name ? `, ${P.name}` : ""}`, sub || "Clinical trial matching and remote tumor boards.", newMatch),
+    h("div", { class: "kpis" },
+      kpi(S.trials.length || "…", "recruiting treatment trials", "#trials"),
+      kpi(S.countries || "…", "countries with open sites", "#trials"),
+      kpi(S.db ? S.patients.length : "–", "patients in your workspace", "#patients"),
+      kpi(S.db ? open.length : "–", "boards waiting for opinions", "#boards")),
     h("div", { class: "split" },
       h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, "Recent patients"), h("a", { href: "#patients", class: "small" }, "All patients")), patientsBlock),
-      h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, `Open tumor boards${S.db ? ` (${open.length})` : ""}`), h("a", { href: "#boards", class: "small" }, "All boards")), boardsBlock)),
-    h("div", { class: "scope" },
-      h("section", { class: "card stack" }, h("h3", {}, "How a case moves through Eligo"),
-        h("ol", { class: "steps-list small" },
-          h("li", {}, "Paste a de-identified case summary, in any language."),
-          h("li", {}, "Eligo shortlists recruiting trials and checks each against its eligibility criteria."),
-          h("li", {}, "Results are ranked by fit, then by how close the recruiting sites are."),
-          h("li", {}, "The family receives an explanation and checklist in their language."),
-          h("li", {}, "Hard cases go to a tumor board for written specialist opinions."))),
-      h("section", { class: "card stack" }, h("h3", {}, "What Eligo does and does not do"),
-        h("ul", { class: "list small" },
-          h("li", {}, "Supports the treating oncologist; it does not make treatment decisions."),
-          h("li", {}, "Every match must be confirmed by the oncologist and the trial site."),
-          h("li", {}, "Fit labels come from the trial's published criteria and the facts in the summary only."),
-          h("li", {}, "Use initials or a code. Never enter names, ID numbers or contact details.")))));
+      h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, "Boards waiting for opinions"), h("a", { href: "#boards", class: "small" }, "All boards")),
+        P.specialty && open.some((b) => b.specialties?.includes(P.specialty)) ? h("p", { class: "small muted" }, `Cases asking for ${P.specialty} are listed first.`) : null, boardsBlock)),
+    h("div", { class: "grid-2" },
+      h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "Recruiting trials by country"), h("span", { class: "small muted" }, "Latin America")),
+        S.trials.length ? bars(countryRows(), (c) => openDirectory({ country: c })) : h("p", { class: "muted" }, "Loading…")),
+      h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "Recruiting trials by cancer type"), h("span", { class: "small muted" }, "Select to browse")),
+        S.trials.length ? bars(cancerRows(), (c) => openDirectory({ q: c.split(" ")[0].toLowerCase() })) : h("p", { class: "muted" }, "Loading…"))),
+    h("p", { class: "small muted" }, `Trial data: ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}. Eligo supports the treating oncologist; every match must be confirmed by the oncologist and the trial site.`));
 }
+function kpi(n, label, href) {
+  return h("a", { class: "kpi", href }, h("b", {}, String(n)), h("span", {}, label));
+}
+
+function homePatient() {
+  const P = S.profile, M = S.myMatch;
+  const inCountry = P.country ? S.trials.filter((t) => sitesIn(t, P.country)).length : 0;
+  const blocks = [];
+  if (M?.matches?.length) {
+    const likely = M.matches.filter((m) => m.fit === "likely").length, possible = M.matches.filter((m) => m.fit === "possible").length;
+    blocks.push(h("section", { class: "card stack" },
+      h("div", { class: "section-title" }, h("h2", {}, "Your trial matches"), h("a", { href: "#mytrials", class: "small" }, "See all details")),
+      h("p", { class: "muted small" }, `Checked ${ago(M.matched_at)}: ${likely} likely and ${possible} possible match${possible === 1 ? "" : "es"} out of ${M.matches.length}. Your oncologist must confirm each one.`),
+      ...M.matches.slice(0, 3).map((m) => { const t = S.byId.get(m.id); return h("div", { class: "stack", style: "gap:2px;padding-top:8px;border-top:1px solid var(--line)" },
+        h("div", { class: "row" }, h("span", { class: "pill", "data-tone": m.fit }, m.fit), h("span", { class: "chip" }, PROX_LABEL[m.proximity]?.replace("patient's", "your") || "")),
+        h("span", { style: "font-weight:500" }, t?.title || m.id), m.plain_summary ? h("span", { class: "small muted" }, m.plain_summary) : null); })));
+    if (M.checklist?.length) blocks.push(h("section", { class: "card stack" }, h("h2", {}, "Your next steps"), list(M.checklist.slice(0, 5))));
+  } else {
+    blocks.push(h("section", { class: "card stack" }, h("h2", {}, "Find trials for your diagnosis"),
+      h("p", {}, "Describe the diagnosis in your own words, or paste what your doctor wrote, in any language. Eligo checks every recruiting trial in our index and explains the options to you in ", P.language || "your language", "."),
+      h("a", { class: "btn primary", href: "#mytrials", style: "align-self:flex-start" }, "Start")));
+  }
+  return h("div", { class: "view" },
+    head(`${greeting()}${P.name ? `, ${P.name}` : ""}`, P.relation === "caregiver" ? "Finding clinical trials for someone you care for." : "Finding clinical trials for your cancer."),
+    h("div", { class: "split" },
+      h("div", { class: "stack", style: "gap:18px" }, ...blocks),
+      h("div", { class: "stack", style: "gap:18px" },
+        h("section", { class: "card stack" }, h("h3", {}, P.country ? `Trials recruiting in ${P.country}` : "Trials recruiting near you"),
+          h("p", { class: "kpi-inline" }, h("b", {}, String(P.country ? inCountry : S.trials.length || "…")), P.country ? " treatment trials have a site open in your country." : " treatment trials in our index."),
+          h("button", { class: "btn", style: "align-self:flex-start", onclick: () => openDirectory({ country: P.country || "" }) }, "Browse them")),
+        h("section", { class: "card stack" }, h("h3", {}, "Your information is private"),
+          h("p", { class: "small muted" }, S.standalone ? "What you enter stays in this browser. Nothing is shared." : "Only you can see your profile and your matches. Doctors on Eligo cannot see them unless you show them."),
+          h("p", { class: "small muted" }, "Eligo does not give medical advice. Always decide together with your oncologist.")))));
+}
+
+/* -------- profile and first-time setup -------- */
+function viewProfile() {
+  const first = !S.profile;
+  const d = S.drafts.profile ||= { role: S.profile?.role || "", name: S.profile?.name || (S.standalone ? "" : S.me?.name || ""), relation: S.profile?.relation || "self",
+    language: S.profile?.language || "Spanish", country: S.profile?.country || "", city: S.profile?.city || "", title: S.profile?.title || CLINICAL_TITLES[0],
+    specialty: S.profile?.specialty || SPECIALTIES[0], institution: S.profile?.institution || "", languages: S.profile?.languages || "" };
+  const wrap = h("div", { class: "view" }, head(first ? "Welcome to Eligo" : "Your profile", first ? "Tell us who you are, so Eligo shows you the right tools." : "Update how you appear and what Eligo shows you."));
+  if (!S.myColl) { wrap.append(h("div", { class: "card" }, h("p", {}, "Sign in to Claude to create your profile."))); return wrap; }
+  const choice = (role, title, text) => h("button", { type: "button", class: "role-card", "aria-pressed": String(d.role === role), onclick: () => { d.role = role; renderView(); } },
+    h("b", {}, title), h("span", { class: "small muted" }, text));
+  wrap.append(h("div", { class: "role-grid" },
+    choice("patient", "I'm a patient or family member", "Find trials for a diagnosis and get them explained in your language. Your information stays private."),
+    choice("clinical", "I'm a doctor or work on clinical trials", "Match patients to trials, keep patient records and join remote tumor boards.")));
+  if (!d.role) return wrap;
+
+  const input = (id, label, key, attrs = {}) => { const el = h("input", { type: "text", id, ...attrs, oninput: (e) => { d[key] = e.target.value; } }); el.value = d[key]; return h("div", { class: "field" }, h("label", { for: id }, label), el); };
+  const select = (id, label, key, options) => h("div", { class: "field" }, h("label", { for: id }, label),
+    h("select", { id, onchange: (e) => { d[key] = e.target.value; } }, ...options.map((o) => Array.isArray(o) ? h("option", { value: o[0], selected: d[key] === o[0] }, o[1]) : h("option", { value: o, selected: d[key] === o }, o))));
+  const countryOpts = [["", "Select a country"], ...COUNTRIES.map((c) => [c, c])];
+  const fields = d.role === "patient"
+    ? [input("pf-name", "What should we call you? (optional)", "name", { placeholder: "A first name or nickname", maxlength: "60" }),
+       select("pf-relation", "Who are you looking for trials for?", "relation", [["self", "Myself"], ["caregiver", "A family member or someone I care for"]]),
+       select("pf-language", "Language for explanations", "language", LANGUAGES),
+       select("pf-country", "Country", "country", countryOpts), input("pf-city", "City (optional)", "city", { maxlength: "80" })]
+    : [input("pf-name", "Your name, as colleagues should see it", "name", { placeholder: "Dr. Ana Benítez", maxlength: "80" }),
+       select("pf-title", "Role", "title", CLINICAL_TITLES), select("pf-specialty", "Specialty", "specialty", SPECIALTIES),
+       input("pf-inst", "Hospital, center or company", "institution", { maxlength: "120" }), select("pf-country", "Country", "country", countryOpts),
+       input("pf-langs", "Languages you work in", "languages", { placeholder: "Spanish, English", maxlength: "120" })];
+  const msg = h("p", { class: "small error" });
+  const save = h("button", { class: "btn primary", onclick: async () => {
+    if (d.role === "clinical" && !d.name.trim()) { msg.textContent = "Add your name so colleagues know who wrote an opinion."; return; }
+    if (!d.country) { msg.textContent = "Choose a country."; return; }
+    save.disabled = true; msg.textContent = "";
+    try { await saveProfile(d); S.drafts.profile = null; go("home"); } catch (e) { msg.textContent = e?.code === "no_identity" ? "Sign in to Claude to save your profile." : dbFail(e); save.disabled = false; }
+  } }, first ? "Continue" : "Save profile");
+  wrap.append(h("div", { class: "card stack", style: "max-width:640px" }, h("div", { class: "grid-2", style: "gap:12px 16px" }, ...fields),
+    h("p", { class: "small muted" }, d.role === "patient"
+      ? "Only you can see this. Use a nickname if you prefer; never enter ID numbers."
+      : "Your name, role, institution and country appear next to your tumor board opinions."),
+    h("div", { class: "row" }, save, first ? null : h("a", { class: "btn", href: "#home", onclick: () => { S.drafts.profile = null; } }, "Cancel")), msg));
+  return wrap;
+}
+
+/* -------- patient: my trials -------- */
+function viewMyTrials() {
+  const M = S.self, P = S.profile;
+  const wrap = h("div", { class: "view" }, head("My trials", `Explained in ${P.language || "your language"}. Your oncologist must confirm any trial before you enroll.`));
+  const ta = h("textarea", { id: "self-text", placeholder: "For example: “Tengo cáncer de mama HER2 positivo, estadio IV, me trataron con trastuzumab y ya no responde…” You can also paste your doctor's report, without your name or ID number.", oninput: (e) => { M.text = e.target.value; } });
+  ta.value = M.text || (!M.result && S.myMatch?.text) || "";
+  if (!M.text && ta.value) M.text = ta.value;
+  const run = h("button", { class: "btn primary", disabled: M.running || !S.sample || !S.trials.length, onclick: () => runMatch(M, P.language) }, ic("match"), M.running ? "Searching…" : S.myMatch ? "Search again" : "Find trials");
+  wrap.append(h("div", { class: "card stack" },
+    h("div", { class: "field" }, h("label", { for: "self-text" }, "Describe the diagnosis"), ta),
+    h("div", { class: "row" }, run, M.running ? h("button", { class: "btn", onclick: () => M.ctl?.abort() }, "Stop") : null),
+    !S.sample ? (S.standalone ? h("p", { class: "notice" }, "Add an Anthropic API key in ", h("a", { href: "#settings" }, "Settings"), " to search.") : h("p", { class: "muted small" }, "Searching uses Claude and runs when Eligo is opened in Claude.")) : null,
+    h("p", { class: "muted small" }, "Include the cancer type, stage, test results such as mutations, and the treatments so far. The more you include, the better the matches.")));
+  if (M.running) wrap.append(h("div", { class: "card steps" },
+    ...[["read", "Reading your description"], ["assess", "Checking each trial's requirements"]].map(([k, l]) =>
+      h("div", { "data-state": M.step === k ? "active" : (k === "read" && M.step === "assess") ? "done" : "todo" }, h("span", { class: "dot" }), l)),
+    h("p", { class: "muted small" }, "Usually 30 to 90 seconds.")));
+  if (M.error) wrap.append(h("p", { class: M.error === "Stopped." ? "muted" : "error" }, M.error));
+  if (M.result) wrap.append(...resultBlocks(M.result, "self"));
+  else if (S.myMatch) wrap.append(h("p", { class: "small muted" }, `Saved ${ago(S.myMatch.matched_at)}.`), ...resultBlocks(S.myMatch, "self-saved"));
+  return wrap;
+}
+
+/* -------- trials directory -------- */
+function viewTrials() {
+  const D = S.dir;
+  const q = D.q.trim().toLowerCase(), terms = q.split(/\s+/).filter(Boolean);
+  const rows = S.trials.filter((t) => {
+    if (D.country && !sitesIn(t, D.country)) return false;
+    if (!terms.length) return true;
+    const hay = (t.id + " " + t.title + " " + t.conditions.join(" ") + " " + t.interventions.join(" ")).toLowerCase();
+    return terms.every((w) => hay.includes(w));
+  });
+  const search = h("input", { type: "text", id: "dir-q", placeholder: "Cancer type, drug, biomarker or NCT number", oninput: (e) => { D.q = e.target.value; D.limit = 25; renderView(); } });
+  search.value = D.q;
+  const countries = [...new Set(S.trials.flatMap((t) => t.sites.map((x) => x[2])))].filter(Boolean).sort();
+  const country = h("select", { id: "dir-country", onchange: (e) => { D.country = e.target.value; D.limit = 25; renderView(); } },
+    h("option", { value: "" }, "All countries"), ...countries.map((c) => h("option", { value: c, selected: D.country === c }, c)));
+  const wrap = h("div", { class: "view" },
+    head(isPatient() ? "All trials" : "Trials", `Recruiting cancer treatment trials with at least one site in Latin America. Source: ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}.`),
+    h("div", { class: "card row", style: "gap:12px" },
+      h("div", { class: "field", style: "flex:2;min-width:220px" }, h("label", { for: "dir-q" }, "Search"), search),
+      h("div", { class: "field", style: "flex:1;min-width:180px" }, h("label", { for: "dir-country" }, "Site in"), country)),
+    h("p", { class: "small muted" }, `${rows.length} trial${rows.length === 1 ? "" : "s"}${isPatient() ? ". To see which ones fit you, use My trials." : ""}`));
+  if (!S.trials.length) { wrap.append(h("p", { class: "muted" }, "Loading trials…")); return wrap; }
+  const listEl = h("div", { class: "card", style: "padding:0" }, ...rows.slice(0, D.limit).map((t) => {
+    const inCountry = D.country ? t.sites.filter((x) => x[2] === D.country) : [];
+    const countriesT = [...new Set(t.sites.map((x) => x[2]).filter(Boolean))];
+    const contact = t.contact ? [t.contact.name, t.contact.phone, t.contact.email].filter(Boolean).join(" · ") : "";
+    return h("details", { class: "dir-row" },
+      h("summary", {}, h("span", { class: "dir-title" }, t.title),
+        h("span", { class: "row small muted", style: "gap:4px 12px" }, h("span", { class: "mono" }, t.id), t.phases.length ? h("span", {}, t.phases.map((p) => p.replace("PHASE", "Phase ").replace("EARLY_", "Early ")).join(", ")) : null,
+          h("span", {}, `${t.sites.length} site${t.sites.length === 1 ? "" : "s"} · ${countriesT.slice(0, 4).join(", ")}${countriesT.length > 4 ? ` +${countriesT.length - 4}` : ""}`))),
+      h("div", { class: "stack dir-body" },
+        t.conditions.length ? h("p", { class: "small" }, h("span", { class: "muted" }, "Conditions: "), t.conditions.join(", ")) : null,
+        t.interventions.length ? h("p", { class: "small" }, h("span", { class: "muted" }, "Treatments tested: "), t.interventions.join(", ")) : null,
+        h("p", { class: "small" }, t.summary.length > 700 ? t.summary.slice(0, 700) + "…" : t.summary),
+        inCountry.length ? h("div", {}, h("div", { class: "label" }, `Sites in ${D.country}`), list(inCountry.map((x) => x.filter(Boolean).join(", ")))) : null,
+        h("details", {}, h("summary", {}, "Eligibility criteria"), h("p", { class: "small", style: "white-space:pre-wrap" }, t.eligibility)),
+        contact ? h("p", { class: "small" }, h("span", { class: "muted" }, "Contact: "), contact) : null,
+        h("a", { class: "small", href: `https://clinicaltrials.gov/study/${encodeURIComponent(t.id)}`, target: "_blank", rel: "noopener" }, "Full record on ClinicalTrials.gov ↗")));
+  }));
+  if (rows.length) wrap.append(listEl);
+  else wrap.append(h("div", { class: "card empty" }, h("p", {}, "No trial matches that search. Try a broader term, such as the cancer type only.")));
+  if (rows.length > D.limit) wrap.append(h("button", { class: "btn", style: "align-self:center", onclick: () => { D.limit += 50; renderView(); } }, `Show more (${rows.length - D.limit} left)`));
+  return wrap;
+}
+
 function viewMatch() {
   const M = S.match;
   const patient = M.forPatient ? S.patients.find((p) => p.id === M.forPatient) : null;
@@ -545,7 +780,7 @@ function viewMatch() {
     head(patient ? `Re-run matching for ${patient.alias}` : "Trial matcher", "Paste a cancer patient's summary in any language. Claude reads it, checks recruiting trials against their eligibility criteria, and explains the options in the patient's language."));
   const ta = h("textarea", { id: "case-text", placeholder: "Example: Mujer de 58 años de Asunción, Paraguay, con cáncer de pulmón estadio IV, mutación EGFR…", oninput: (e) => { M.text = e.target.value; } });
   ta.value = M.text;
-  const run = h("button", { class: "btn primary", id: "run", disabled: M.running || !S.sample || !S.trials.length, onclick: runMatch }, ic("match"), M.running ? "Matching…" : "Find trials");
+  const run = h("button", { class: "btn primary", id: "run", disabled: M.running || !S.sample || !S.trials.length, onclick: () => runMatch(S.match) }, ic("match"), M.running ? "Matching…" : "Find trials");
   wrap.append(h("div", { class: "card stack" },
     h("div", { class: "field" }, h("label", { for: "case-text" }, "Patient summary"), ta),
     h("div", { class: "row" }, run,
@@ -563,7 +798,7 @@ function viewMatch() {
       h("div", { "data-state": M.step === k ? "active" : (k === "read" && M.step === "assess") ? "done" : "todo" }, h("span", { class: "dot" }), l)),
     h("p", { class: "muted small" }, "Usually 30 to 90 seconds.")));
   if (M.error) wrap.append(h("p", { class: M.error === "Stopped." ? "muted" : "error" }, M.error));
-  if (M.result) wrap.append(...resultBlocks(M.result, true));
+  if (M.result) wrap.append(...resultBlocks(M.result, "patient"));
   return wrap;
 }
 
@@ -597,9 +832,19 @@ function trialCard(m) {
         contact ? h("div", {}, h("div", { class: "label" }, "Trial contact"), h("p", { class: "small" }, contact)) : null)),
     h("a", { href: `https://clinicaltrials.gov/study/${encodeURIComponent(m.id)}`, target: "_blank", rel: "noopener", class: "small" }, "Open on ClinicalTrials.gov ↗"));
 }
-function resultBlocks(R, withSave) {
+function resultBlocks(R, mode) {
   const out = [];
-  if (withSave) {
+  const forSelf = mode === "self" || mode === "self-saved";
+  if (mode === "self") {
+    const msg = h("p", { class: "small error" });
+    const save = h("button", { class: "btn primary", disabled: !S.myColl, onclick: async () => {
+      save.disabled = true; msg.textContent = "";
+      try { await saveMyMatch(R); renderView(); } catch (e) { msg.textContent = dbFail(e); save.disabled = false; }
+    } }, "Save to my profile");
+    out.push(h("div", { class: "card row", style: "justify-content:space-between" },
+      h("p", { class: "small muted" }, "Save these results so you can come back to them and show them to your doctor. Only you can see them."), save, msg));
+  }
+  if (mode === "patient") {
     const alias = h("input", { type: "text", id: "alias", placeholder: "Initials or code, e.g. MG-58", maxlength: "60" });
     alias.value = S.drafts.alias || (S.match.forPatient ? S.patients.find((p) => p.id === S.match.forPatient)?.alias || "" : "");
     alias.addEventListener("input", (e) => { S.drafts.alias = e.target.value; });
@@ -616,10 +861,10 @@ function resultBlocks(R, withSave) {
   out.push(h("h2", {}, "The case"), h("div", { class: "card" }, caseFacts(R.case)));
   if (R.case.is_cancer_case === false) { out.push(h("p", {}, "This doesn't read as a cancer case, so no trials were checked.")); return out; }
   if (!R.matches.length) { out.push(h("div", { class: "card empty" }, h("p", {}, "No trial in this snapshot fits this case. Eligo's full engine also searches trials worldwide."))); return out; }
-  if (R.message) out.push(h("h2", {}, "For the patient and family"), h("div", { class: "card" }, h("p", { style: "font-size:1.02rem" }, R.message)));
-  out.push(h("h2", {}, `Trials to discuss (${R.matches.length})`), ...R.matches.map(trialCard),
+  if (R.message) out.push(h("h2", {}, forSelf ? "For you and your family" : "For the patient and family"), h("div", { class: "card" }, h("p", { style: "font-size:1.02rem" }, R.message)));
+  out.push(h("h2", {}, `${forSelf ? "Trials to ask your doctor about" : "Trials to discuss"} (${R.matches.length})`), ...R.matches.map(trialCard),
     h("div", { class: "grid-2" },
-      h("div", { class: "card stack" }, h("h3", {}, "Questions for the oncologist"), list(R.questions)),
+      h("div", { class: "card stack" }, h("h3", {}, forSelf ? "Questions to ask your oncologist" : "Questions for the oncologist"), list(R.questions)),
       h("div", { class: "card stack" }, h("h3", {}, "Before enrolling"), list(R.checklist))));
   return out;
 }
@@ -651,6 +896,7 @@ function viewPatient(r) {
     if (!p) return h("div", { class: "card empty" }, h("h3", {}, "Patient not found"), h("p", {}, "It may have been deleted."), h("a", { class: "btn", href: "#patients" }, "Back to patients"));
     const boards = S.boards.filter((b) => b.patient_id === p.id);
     const R = { text: p.text, case: p.case || {}, matches: p.matches || [], message: p.message, questions: p.questions, checklist: p.checklist };
+    const resultsMode = null;
     const rerun = h("button", { class: "btn", disabled: !S.sample, onclick: () => { S.match = { ...S.match, text: p.text, result: null, error: "", forPatient: p.id }; S.drafts.alias = p.alias; go("match"); } }, ic("match"), "Re-run matching");
     const toBoard = h("button", { class: "btn primary", disabled: !S.canWrite, onclick: () => { S.drafts.newBoardFor = p.id; renderView(); setTimeout(() => $("#question")?.focus(), 0); } }, ic("boards"), "Ask a tumor board");
     const del = h("button", { class: "btn danger ghost", disabled: !S.canWrite, onclick: () => { S.drafts.confirmDelete = p.id; renderView(); } }, "Delete");
@@ -662,7 +908,7 @@ function viewPatient(r) {
         h("button", { class: "btn primary", onclick: async () => { try { await S.db.collection("patients").doc(p.id).delete(); S.drafts.confirmDelete = null; go("patients"); } catch (e) { alertInline(box, dbFail(e)); } } }, "Delete"))));
     if (S.drafts.newBoardFor === p.id) box.append(newBoardForm(p));
     if (boards.length) box.append(h("h2", {}, "Tumor boards"), ...boards.map(boardRow));
-    box.append(...resultBlocks(R, false),
+    box.append(...resultBlocks(R, resultsMode),
       h("details", { class: "card" }, h("summary", {}, "Original summary"), h("p", { style: "white-space:pre-wrap" }, p.text || "")));
     return box;
   }));
@@ -745,9 +991,11 @@ function viewBoard(r) {
     left.append(opList);
     const ids = [...new Set(ops.map((o) => o.author).filter(Boolean))];
     const drawOps = (profiles = {}) => opList.replaceChildren(...ops.map((o) => {
-      const pr = profiles[o.author] || {};
+      const pr = profiles[o.author] || {}, mem = S.members[o.author] || {};
+      const role = [mem.title, mem.institution, mem.country].filter(Boolean).join(", ");
       return h("div", { class: "card opinion" }, h("img", { class: "avatar", src: safeUrl(pr.avatarUrl), alt: "", style: "width:36px;height:36px" }),
-        h("div", { class: "body" }, h("div", { class: "who" }, h("b", {}, pr.name || "A specialist"), h("span", { class: "chip" }, o.specialty || "Specialist"), h("span", { class: "muted small" }, ago(o.created_at))),
+        h("div", { class: "body" }, h("div", { class: "who" }, h("b", {}, mem.name || pr.name || "A specialist"), h("span", { class: "chip" }, o.specialty || "Specialist"), h("span", { class: "muted small" }, ago(o.created_at))),
+          role ? h("p", { class: "small muted" }, role) : null,
           h("p", { style: "white-space:pre-wrap" }, o.recommendation),
           o.trials_view ? h("div", {}, h("div", { class: "label" }, "On the trials"), h("p", { class: "small", style: "white-space:pre-wrap" }, o.trials_view)) : null));
     }));
@@ -772,7 +1020,7 @@ function viewBoard(r) {
 
     // Add opinion form
     if (b.status === "open") {
-      const d = S.drafts[`op-${b.id}`] ||= { specialty: "Medical oncology", recommendation: "", trials: "" };
+      const d = S.drafts[`op-${b.id}`] ||= { specialty: SPECIALTIES.includes(S.profile?.specialty) ? S.profile.specialty : "Medical oncology", recommendation: "", trials: "" };
       const sel = h("select", { id: "op-specialty", onchange: (e) => { d.specialty = e.target.value; } }, ...SPECIALTIES.map((s) => h("option", { value: s, selected: d.specialty === s }, s)));
       const rec = h("textarea", { id: "op-rec", placeholder: "Your recommendation and reasoning.", oninput: (e) => { d.recommendation = e.target.value; } }); rec.value = d.recommendation;
       const tv = h("textarea", { id: "op-trials", style: "min-height:70px", placeholder: "Optional: which of the matched trials, if any, you'd refer to and why.", oninput: (e) => { d.trials = e.target.value; } }); tv.value = d.trials;
@@ -846,6 +1094,7 @@ renderShell(); renderView();
 
 (async () => {
   if (!window.claude) return bootStandalone();
+  setTimeout(() => { if (!S.profileLoaded && !S.db) { S.profileLoaded = true; scheduleRender(); } }, 12000);
   const [sample, db, user] = await Promise.all([claude.use("sample"), claude.use("db"), claude.use("user")]);
   S.sample = sample; S.user = user;
   if (user) { S.me = await user.me(); const cw = await user.can("data.write"); if (cw === false) S.canWrite = false; }
@@ -861,9 +1110,27 @@ renderShell(); renderView();
     sub("patients", db.collection("patients").orderBy("updated_at", "desc"), "patients");
     sub("boards", db.collection("boards").orderBy("created_at", "desc"), "boards");
     sub("opinions", db.collection("opinions").orderBy("created_at", "asc"), "opinions");
-  }
+    watchMembers(db);
+    // Each person's profile and saved matches live in their own private space: nobody else can read it.
+    if (S.me?.id) watchMine(db, `data/users/${S.me.id}`);
+    else { S.profileLoaded = true; }
+  } else { S.profileLoaded = true; }
   scheduleRender();
 })();
+
+function watchMine(db, coll) {
+  S.myColl = coll;
+  db.collection(coll).onSnapshot((snap) => {
+    const byId = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()]));
+    S.profile = byId.profile || null; S.myMatch = byId.match || null;
+    if (!snap.metadata.fromCache || snap.size) S.profileLoaded = true;
+    scheduleRender();
+  }, () => { S.profileLoaded = true; scheduleRender(); });
+  setTimeout(() => { if (!S.profileLoaded) { S.profileLoaded = true; scheduleRender(); } }, 10000);
+}
+function watchMembers(db) {
+  db.collection("members").onSnapshot((snap) => { S.members = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()])); scheduleRender(); }, () => {});
+}
 
 /* Outside Claude (GitHub Pages, a local file server): your own API key, data in this browser. */
 async function bootStandalone() {
@@ -874,7 +1141,7 @@ async function bootStandalone() {
     document.head.append(s);
   });
   const P = window.EligoStandalone;
-  if (!P) { scheduleRender(); return; }
+  if (!P) { S.profileLoaded = true; scheduleRender(); return; }
   const key = P.getKey();
   S.sample = key ? P.makeSample(key) : null;
   S.user = P.makeUser(); S.me = await S.user.me();
@@ -884,6 +1151,8 @@ async function bootStandalone() {
       S[key] = snap.docs.map((d) => ({ id: d.id, ...d.data() })); S.loaded[key] = true; scheduleRender();
     });
   }
+  watchMembers(db);
+  watchMine(db, "me");
   scheduleRender();
 }
 </script>
