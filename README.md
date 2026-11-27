@@ -1,0 +1,67 @@
+# Trial Matcher (MVP)
+
+The first piece of the global cancer trial access company described in
+[`docs/designs/global-trial-access.md`](docs/designs/global-trial-access.md): the shared **matching engine**.
+
+Paste a cancer patient's summary in **any language** and get:
+
+1. **The case**: Claude extracts cancer type, stage, biomarkers, prior treatments, location, and what's missing.
+2. **Recruiting treatment trials** from [ClinicalTrials.gov](https://clinicaltrials.gov), searched in three passes:
+   trials near the patient (their country and travel region) first, then the best biomarker-matched trials worldwide,
+   then the cancer type alone. Closed sites are dropped.
+3. **A fit judgement for each trial** (likely, possible or unlikely) against its eligibility criteria, with reasons and what a doctor must confirm.
+4. **A plain-language explanation in the patient's language**, questions for their oncologist, and an enrollment checklist covering costs, travel, visas and follow-up at home.
+
+> Prototype only. Use fictional or de-identified cases, never real names or ID numbers.
+> Not medical advice: a treating oncologist must confirm every match.
+
+## Run it
+
+Needs [Bun](https://bun.sh) and an Anthropic API key.
+
+```bash
+bun install
+```
+
+```bash
+export ANTHROPIC_API_KEY=your-key
+```
+
+```bash
+bun run start
+```
+
+Then open http://localhost:3000 and click a sample case. Or from the terminal:
+
+```bash
+bun run match samples/es-lung.txt
+```
+
+## Test
+
+```bash
+bun test
+```
+
+```bash
+bun run typecheck
+```
+
+The tests use a recorded ClinicalTrials.gov response (`test/fixtures/`) and a fake Claude client, so they need no key or network.
+
+## How it works
+
+| File | What it does |
+|---|---|
+| `src/claude.ts` | The two Claude calls: case extraction and trial assessment, with structured outputs and refusal fallback |
+| `src/trials.ts` | ClinicalTrials.gov v2 search and normalization |
+| `src/feasibility.ts` | Where the patient could go: same country, same region, or abroad |
+| `src/engine.ts` | The pipeline and ranking (best fit first, then closest) |
+| `src/server.ts` / `public/index.html` | The web page and its API |
+| `src/cli.ts` | Command-line version |
+
+## Next
+
+- Run the 5 hand-run tumor board cases (the design doc's assignment) through it and note what was wrong or missing.
+- Contact details and sponsor travel-support info per site.
+- Uploading PDFs and photos of medical records.

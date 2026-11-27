@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trial Matcher</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --text: #1c1c1a; --muted: #6b6b66; --line: #e4e3df;
+    --accent: #2f5d8a; --likely: #1f7a4d; --possible: #a56a00; --unlikely: #8a8a85;
+    --warn-bg: #fff6e0; --warn-text: #6b4a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615; --card: #1f1f1d; --text: #ecebe7; --muted: #a3a29c; --line: #34332f;
+      --accent: #7fb0e0; --likely: #5cc28f; --possible: #e0ad4a; --unlikely: #8f8e88;
+      --warn-bg: #3a2f14; --warn-text: #f0d58a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .warn { background: var(--warn-bg); color: var(--warn-text); padding: 10px 14px; border-radius: 8px; font-size: .92rem; margin-bottom: 16px; }
+  textarea { width: 100%; min-height: 180px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); font: inherit; resize: vertical; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+  button { font: inherit; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .muted { color: var(--muted); font-size: .9rem; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+  .badge { display: inline-block; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; color: #fff; margin-right: 6px; }
+  .likely { background: var(--likely); } .possible { background: var(--possible); } .unlikely { background: var(--unlikely); }
+  .chip { display: inline-block; font-size: .8rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); margin: 2px 4px 2px 0; }
+  .trial-title { font-weight: 600; margin: 6px 0; }
+  details { margin-top: 8px; } summary { cursor: pointer; color: var(--accent); }
+  ul { padding-left: 20px; margin: 6px 0; }
+  a { color: var(--accent); }
+  .error { color: #c0392b; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 0; }
+  dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Trial Matcher</h1>
+  <p class="sub">Paste a cancer patient's summary in any language. Get recruiting clinical trials worldwide, explained in the patient's language.</p>
+  <div class="warn"><strong>Prototype.</strong> Use fictional or de-identified cases only, never real names or ID numbers. This is not medical advice: a treating oncologist must confirm every match.</div>
+
+  <textarea id="text" placeholder="Example: Mujer de 58 años de Asunción, Paraguay, con cáncer de pulmón de células no pequeñas estadio IV..."></textarea>
+  <div class="row">
+    <button class="primary" id="go">Find trials</button>
+    <span class="muted">Try a sample:</span>
+    <button data-sample="es">Spanish (lung)</button>
+    <button data-sample="pt">Portuguese (breast)</button>
+    <button data-sample="en">English (colorectal)</button>
+  </div>
+  <p id="status" class="muted" aria-live="polite"></p>
+  <div id="out"></div>
+</main>
+<script>
+const SAMPLES = {
+  es: "Paciente femenina de 58 años, vive en Asunción, Paraguay. Diagnóstico de adenocarcinoma de pulmón (cáncer de pulmón de células no pequeñas) estadio IV con metástasis óseas, diagnosticado hace 14 meses. Mutación EGFR deleción del exón 19. Recibió osimertinib durante 12 meses con progresión de la enfermedad en la última tomografía. ECOG 1. Sin metástasis cerebrales. Hipertensión controlada. Nunca fumó.",
+  pt: "Paciente de 46 anos, sexo feminino, mora em Curitiba, Brasil. Câncer de mama HER2 positivo, receptores hormonais negativos, estágio IV com metástases hepáticas. Tratada com trastuzumabe e pertuzumabe com docetaxel na primeira linha e depois trastuzumabe deruxtecan, com progressão. ECOG 0. Função cardíaca normal (FEVE 60%).",
+  en: "62-year-old man living in Lima, Peru. Metastatic colorectal adenocarcinoma with liver and lung metastases. KRAS G12C mutation, microsatellite stable. Progressed after FOLFOX plus bevacizumab and then FOLFIRI. ECOG 1. Mild type 2 diabetes.",
+};
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const list = (items) => items && items.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : `<p class="muted">None</p>`;
+const PROX = { same_country: "Sites in your country", same_region: "Sites in your region", abroad: "Sites abroad only" };
+
+document.querySelectorAll("[data-sample]").forEach((b) => b.addEventListener("click", () => { $("text").value = SAMPLES[b.dataset.sample]; }));
+
+$("go").addEventListener("click", async () => {
+  const text = $("text").value.trim();
+  if (!text) { $("status").textContent = "Paste a patient summary first."; return; }
+  $("go").disabled = true;
+  $("out").innerHTML = "";
+  $("status").textContent = "Reading the case, searching ClinicalTrials.gov and checking eligibility. This takes about a minute...";
+  try {
+    const res = await fetch("/api/match", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+    $("status").textContent = "";
+    render(data);
+  } catch (e) {
+    $("status").innerHTML = `<span class="error">${esc(e.message)}</span>`;
+  } finally {
+    $("go").disabled = false;
+  }
+});
+
+function render(r) {
+  const p = r.patient;
+  let html = `<h2>The case</h2><div class="card"><dl>
+    <dt>Summary</dt><dd>${esc(p.summary_en)}</dd>
+    <dt>Language</dt><dd>${esc(p.patient_language)}</dd>
+    <dt>Location</dt><dd>${esc([p.city, p.country].filter(Boolean).join(", ") || "Not stated")}</dd>
+    <dt>Biomarkers</dt><dd>${esc(p.biomarkers.join(", ") || "None stated")}</dd>
+    <dt>Missing</dt><dd>${esc(p.missing_info.join(", ") || "Nothing major")}</dd></dl></div>`;
+
+  if (r.status === "not_a_cancer_case") { $("out").innerHTML = html + `<p>This doesn't look like a cancer case, so no trials were searched.</p>`; return; }
+  if (r.status === "no_trials_found") { $("out").innerHTML = html + `<p>No recruiting trials matched this search on ClinicalTrials.gov.</p>`; return; }
+
+  html += `<h2>For the patient and family</h2><div class="card"><p>${esc(r.patient_message)}</p></div>`;
+  html += `<h2>Trials (${r.matches.length})</h2>`;
+  for (const m of r.matches) {
+    const a = m.assessment, t = m.trial, f = m.feasibility;
+    const sites = f.closest_sites.map((s) => [s.facility, s.city, s.country].filter(Boolean).join(", "));
+    html += `<div class="card">
+      <span class="badge ${a.fit}">${esc(a.fit)}</span><span class="chip">${esc(PROX[f.proximity])}</span>${t.phases.map((ph) => `<span class="chip">${esc(ph)}</span>`).join("")}
+      <div class="trial-title">${esc(t.title)}</div>
+      <p>${esc(a.plain_summary)}</p>
+      <p class="muted">${f.site_count} recruiting site${f.site_count === 1 ? "" : "s"} in ${esc(f.countries.slice(0, 6).join(", ") || "unknown countries")}${f.countries.length > 6 ? ` and ${f.countries.length - 6} more` : ""}</p>
+      <details><summary>Why, and what to confirm</summary>
+        <strong>For</strong>${list(a.reasons_for)}<strong>Against</strong>${list(a.reasons_against)}<strong>Doctor should confirm</strong>${list(a.to_confirm)}
+        <strong>Closest sites</strong>${list(sites)}
+        ${t.contact ? `<strong>Trial contact</strong><p>${esc([t.contact.name, t.contact.phone, t.contact.email].filter(Boolean).join(" · "))}</p>` : ""}
+      </details>
+      <p><a href="${esc(t.url)}" target="_blank" rel="noopener">${esc(t.nct_id)} on ClinicalTrials.gov</a></p>
+    </div>`;
+  }
+  html += `<h2>Questions for the doctor</h2><div class="card">${list(r.questions_for_doctor)}</div>`;
+  html += `<h2>Before enrolling</h2><div class="card">${list(r.enrollment_checklist)}</div>`;
+  $("out").innerHTML = html;
+}
+</script>
+</body>
+</html>

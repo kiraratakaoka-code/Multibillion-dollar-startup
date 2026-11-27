@@ -1,0 +1,680 @@
+{
+ "studies": [
+  {
+   "protocolSection": {
+    "identificationModule": {
+     "nctId": "NCT05099172",
+     "briefTitle": "First in Human Study of BAY2927088 in Participants Who Have Advanced Non-small Cell Lung Cancer (NSCLC) With Mutations in the Genes of Epidermal Growth Factor Receptor (EGFR) and/or Human Epidermal Growth Factor Receptor 2 (HER2)"
+    },
+    "descriptionModule": {
+     "briefSummary": "Researchers are looking for a better way to treat people who have advanced non-small cell lung cancer (NSCLC), a group of lung cancers that have spread to nearby tissues or to other parts of the body.\n\nEpidermal growth factor receptor (EGFR) and human epidermal growth factor receptor 2 (HER2) are proteins that help cells to grow and divide. A damage (also called mutation) to the building plans (genes) for these proteins in cancer cells leads to a production of abnormal EGFR and/or HER2. These abnormal proteins drive the growth and the spread of the cancer. Several EGFR and/or HER2 mutations exist in the cancer cells. The study treatment, sevabertinib (BAY2927088), is expected to block the mutated EGFR and HER2 proteins which may stop the spread of NSCLC.\n\nThe main purpose of this study is to learn:\n\nEscalation, Backfill, and Expansion Part:\n\n* How safe is BAY2927088 for the participants?\n* What is the highest dose of BAY2927088 that can be tolerated (maximum tolerated dose) by or given to (maximum administered dose) the participants?\n* How does BAY2927088 move into, through, and out of the bodies of the participants?\n\nFor this, the researchers will measure the followings:\n\n* The number of participants with medical problems, also called adverse events and serious adverse events, and their severity\n* The number of participants who discontinue study treatment due to an adverse event.\n* The highest dose of BAY2927088 that the participants can take without having adverse events (maximum tolerated dose (MTD)) or the maximum dose that is tested and found to be safe for the participants in case MTD cannot be found out (maximum administered dose (MAD)) of BAY2927088\n* Number of participants experiencing adverse events that prevent an increase in the dose of BAY2927088 (dose-limiting toxicities (DLTs)) at each dose level\n* The (average) total level of BAY2927088 in the blood (also called AUC) after receiving single or multiple doses of BAY2927088\n* The (average) highest level of BAY2927088 in the blood (also called Cmax) after receiving a single or multiple doses of BAY2927088 Extension Part\n* How well does BAY2927088 work in participants?\n\nFor this, the researchers will measure the following:\n\n\u2022 Percentage of participants whose cancer completely disappears (complete response) or reduces by at least 30% (partial response) after taking the treatment (also known as objective response rate (ORR)). This will be assessed by doctors other than the study doctor.\n\nThis study has 4 parts:\n\n* The escalation part aims to find the maximum daily amount (dose) of BAY2927088 that participants can receive.\n* The backfill part aims to test the doses of BAY2927088 that are considered safe in the escalation part by giving it to more participants. This will help find optimal doses of BAY2927088 that work well and are safe to be tested in the next part.\n* The expansion part aims to determine the dose of BAY2927088 to be tested in further studies.\n* The extension part aims to determine whether the selected dose of BAY2927088 from the expansion part works well.\n\nThe participants in this study will take the study treatment BAY2927088 in 3-week periods called \"cycles\". They will in general take BAY2927088 once or twice daily as a liquid/tablet by mouth until their cancer gets worse, they have medical problems, they leave the study, or the study is terminated. Participants will have no more than 5 visits per cycle.\n\nDuring the study, the study team will:\n\n* take blood and urine samples,\n* check the status of the cancer by doing computed tomography (CT) or magnetic resonance imaging (MRI) scans,\n* check the participants' overall health and heart health,\n* ask the participants questions about how they are feeling and what adverse events they are having.\n\nAn adverse event is considered \"serious\" when it leads to death, puts the participant's life at risk, requires hospitalization, causes disability, causes a baby being born with medical problems, or is medically important."
+    },
+    "conditionsModule": {
+     "conditions": [
+      "Advanced Non-small Cell Lung Cancer",
+      "EGFR Mutation",
+      "HER2 Mutation"
+     ]
+    },
+    "designModule": {
+     "phases": [
+      "PHASE1",
+      "PHASE2"
+     ]
+    },
+    "armsInterventionsModule": {
+     "interventions": [
+      {
+       "name": "BAY2927088_formulation A"
+      },
+      {
+       "name": "BAY2927088_formulation B_1"
+      },
+      {
+       "name": "BAY2927088_formulation B_2"
+      },
+      {
+       "name": "BAY2927088_formulation B_3"
+      }
+     ]
+    },
+    "eligibilityModule": {
+     "eligibilityCriteria": "Inclusion Criteria:\n\n* Documented histologically or cytologically confirmed locally advanced NSCLC, not suitable for definitive therapy or recurrent or metastatic NSCLC at screening (small cell or mixed histologies are excluded).\n* Documented disease progression after treatment with at least one prior systemic therapy for advanced disease. Participants who do not have standard of care access due to any reason, are intolerant to, or are not eligible for standard treatments, may also be eligible.\n\nNote: Except for participants eligible for Group F, Group H and Group I (Expansion or Extension) who should have received no prior systemic treatment for locally advanced or metastatic disease.\n\n* Adequate archival tumor tissue (ideally taken after last targeted treatment and not older than 6 months) has to be available, either from primary or metastatic sites. If archival material is not available, a fresh tumor biopsy should be performed if feasible and if the procedure poses no significant risk for the participant.\n* Measurable disease by RECIST v1.1 (or by RANO-BM for participants in Expansion Groups G and H) with at least one lesion that can be accurately measured at baseline with computed tomography (CT) or magnetic resonance imaging (MRI) and that is suitable for accurate repeated measurements.\n* Documented activating EGFR and/or HER2 mutation assessed by a Clinical Laboratory Improvement Amendments (CLIA)-certified (United States \\[US\\] sites) or an equally accredited (outside of the US) local laboratory.\n* Eastern Cooperative Oncology Group (ECOG) performance status 0 or 1.\n* Minimum life expectancy of 12 weeks.\n* Adequate bone marrow function as assessed by the following laboratory tests to be conducted within 7 days before the first dose of study treatment:\n\n  1. Hemoglobin \u2265 9.0 g/dL. Criteria must be met without erythropoietin dependency and without packed red blood cell (pRBC) transfusion within 2 weeks prior to testing.\n  2. Platelets \u2265 100 \u00d7 10\\^9 cells/L.\n  3. Absolute neutrophil count \u2265 1.5 \u00d710\\^9 cells/L. Criteria must be met without the use of hematopoietic growth factors (e.g., G-CSF) within 2 weeks prior to testing.\n* Adequate kidney function as assessed by following laboratory test to be conducted within 7 days before the first dose of study treatment:\n\n  a. Estimated glomerular filtration rate (eGFR) \\> 50 mL/min per 1.73 m\\^2 according to the Modification of Diet in renal Disease Study Group (MDRD) formula.\n* Adequate liver function as assessed by following laboratory tests to be conducted within 7 days before the first dose of study treatment:\n\n  1. Total bilirubin \u2264 1.5 \u00d7 ULN (or \u2264 3 \u00d7 ULN for participants with documented Gilbert-Meulengracht Syndrome, or for participants with hyperbilirubinemia considered due to liver metastasis).\n  2. Aspartate transaminase and alanine transaminase \u2264 2.5 \u00d7 ULN (or \u2264 5 \u00d7 ULN if due to liver involvement by tumor).\n\nExclusion Criteria:\n\n* Treatment with an EGFR tyrosine kinase inhibitor (TKI) \u2264 8 days or 5x the terminal phase, elimination half-lives, whichever is shorter, prior to the first dose of study drug.\n* Treatment with a systemic anti-cancer treatment (excluding EGFR TKIs as described above) \u2264 14 days prior to the first dose of study drug.\n* Radiation therapy, stereotactic radiosurgery (SRS) and palliative radiation \u2264 14 days prior to the first dose of study drug.\n* Treatment with immunotherapy \u2264 28 days prior to the first dose of study drug.\n* Have any unresolved toxicity of Grade \u2265 2 from previous anti-cancer treatment, except for alopecia and skin pigmentation. Participants with chronic, but stable Grade 2 toxicities may be allowed to enroll after agreement between the Investigator and Sponsor.\n* Any history of primary brain or leptomeningeal disease (symptomatic or asymptomatic), presence of symptomatic central nervous system (CNS) metastases, or CNS metastases that require local treatment (such as radiotherapy or surgery).\n* History of spinal cord compression or brain metastases with the following exceptions:\n\n  1. Participants with treated brain metastases that are asymptomatic at screening and who are off or receiving low-dose corticosteroids (\u226410 mg prednisone or equivalent) for at least 7 days prior to first dose of sevabertinib are eligible to enroll in Dose Escalation and Backfill.\n  2. Participants with treated brain metastases that are asymptomatic at screening are eligible in Dose Expansion/Extension (with the exception of Groups G and H) if all of the following criteria are met:\n\n     * there is no evidence of progression (new or enlarging brain metastases) for at least 4 weeks after CNS-directed treatment, as ascertained by clinical examination and brain imaging (MRI or CT) during the screening period.\n     * Participants must be off or receiving low-dose corticosteroids (\u226410 mg prednisone or equivalent) for 7 days prior to first dose of sevabertinib.\n  3. Participants with history of spinal cord compression \\>3 months from definitive therapy and stable by imaging (MRI or CT) during the screening period and clinically asymptomatic.\n  4. Expansion Group G and Group H: Participants with active (new or progressing) clinically stable brain metastases who do not require immediate CNS-directed treatment as per Investigator's judgement and who are off or receiving low-dose corticosteroids (\u226410 mg prednisone or equivalent such as \u2264 1.5 mg/day dexamethasone) in the 7 days prior to first dose of sevabertinib are eligible.\n* History of congestive heart failure (CHF) Class \\>II according to the New York Heart Association (NYHA) Functional Classification or serious cardiac arrhythmias requiring treatment (e.g. ventricular arrhythmias, atrial fibrillation) or any clinically important abnormalities in rhythm, conduction or morphology or resting ECG (e.g., complete left bundle branch block, third degree heart block, second degree heart block, PR interval \\>250 msec).\n* Participants with:\n\n  1. Known human immunodeficiency virus (HIV), except as noted below: Participants with history of HIV infection are eligible at the Investigator's discretion provided that: \u2022 CD4+ T-cell (CD4+) counts are \u2265 350 cells/uL \u2022 The participant has been on established antiretroviral therapy (ART) for at least 4 weeks prior to the start of study drug and has an HIV viral load less than 400 copies/mL prior to start of the study treatment \u2022 The ART being used does not contain strong inducers or inhibitors of CYP3A4, and is not anticipated to cause overlapping toxicities with study drug \u2022 The participant has not had an opportunistic infection within the past 12 months\n  2. Active Hepatitis B infection (positive for Hepatitis B surface antigen \\[HbsAg\\]) and Hepatitis B virus \\[HBV\\] DNA).\n  3. Active Hepatitis C infection (positive anti-HCV Antibody and quantitative HCV RNA results greater than the lower limits of detection of the assay).\n\n     NOTE: Participants with history of chronic HBV or HCV infection are eligible at the Investigator's discretion provided that the disease is stable and sufficiently controlled under treatment.\n* Use of strong CYP3A4 inhibitors and inducers from 14 days prior to first administration of study drug.",
+     "healthyVolunteers": false,
+     "sex": "ALL",
+     "minimumAge": "18 Years",
+     "stdAges": [
+      "ADULT",
+      "OLDER_ADULT"
+     ]
+    },
+    "contactsLocationsModule": {
+     "centralContacts": [
+      {
+       "name": "Bayer Clinical Trials Contact",
+       "role": "CONTACT",
+       "phone": "0018888422937",
+       "email": "clinical-trials-contact@bayer.com"
+      }
+     ],
+     "locations": [
+      {
+       "facility": "Banner MD Anderson Cancer Center at Banner Gateway Medical Center",
+       "status": "COMPLETED",
+       "city": "Gilbert",
+       "country": "United States"
+      },
+      {
+       "facility": "City of Hope - Duarte Cancer Center",
+       "status": "COMPLETED",
+       "city": "Duarte",
+       "country": "United States"
+      },
+      {
+       "facility": "Emory Winship Cancer Institute",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Atlanta",
+       "country": "United States"
+      },
+      {
+       "facility": "The Center for Cancer and Blood Disorders",
+       "status": "WITHDRAWN",
+       "city": "Bethesda",
+       "country": "United States"
+      },
+      {
+       "facility": "Dana-Farber Cancer Institute - Oncology Department",
+       "status": "COMPLETED",
+       "city": "Boston",
+       "country": "United States"
+      },
+      {
+       "facility": "Brigette Harris Cancer Pavilion at Henry Ford Cancer Center - Detroit",
+       "status": "COMPLETED",
+       "city": "Detroit",
+       "country": "United States"
+      },
+      {
+       "facility": "Roswell Park Comprehensive Cancer Center",
+       "status": "WITHDRAWN",
+       "city": "Buffalo",
+       "country": "United States"
+      },
+      {
+       "facility": "Tennessee Oncology - Nashville Centennial Clinic",
+       "status": "RECRUITING",
+       "city": "Nashville",
+       "country": "United States"
+      },
+      {
+       "facility": "The University of Texas MD Anderson Cancer Center - Texas Medical Center",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Houston",
+       "country": "United States"
+      },
+      {
+       "facility": "Inova Schar Cancer Insitute - Inova Fairfax Hospital",
+       "status": "WITHDRAWN",
+       "city": "Fairfax",
+       "country": "United States"
+      },
+      {
+       "facility": "Virginia Cancer Specialists, PC - Fairfax",
+       "status": "COMPLETED",
+       "city": "Fairfax",
+       "country": "United States"
+      },
+      {
+       "facility": "UZ Leuven Gasthuisberg - Pneumology Department",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Leuven",
+       "country": "Belgium"
+      },
+      {
+       "facility": "AZ Delta | Clinical Trial Center - Pneumology",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Roeselare",
+       "country": "Belgium"
+      },
+      {
+       "facility": "Liga Norte Riograndense Contra o Cancer | Centro de Pesquisa Cl\u00ednica",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Natal",
+       "country": "Brazil"
+      },
+      {
+       "facility": "Hospital de Base | Funfarme - Centro Integrado de Pesquisa - Cardiologia",
+       "status": "WITHDRAWN",
+       "city": "S\u00e3o Jos\u00e9 do Rio Preto",
+       "country": "Brazil"
+      },
+      {
+       "facility": "Hospital Israelita Albert Einstein | Morumbi - Clinical Research Department",
+       "status": "WITHDRAWN",
+       "city": "S\u00e3o Paulo",
+       "country": "Brazil"
+      },
+      {
+       "facility": "Beijing Cancer Hospital - Oncology Department",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Beijing",
+       "country": "China"
+      },
+      {
+       "facility": "Beijing Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Beijing",
+       "country": "China"
+      },
+      {
+       "facility": "Fujian Cancer Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Fuzhou",
+       "country": "China"
+      },
+      {
+       "facility": "Harbin Medical University Cancer Hospital",
+       "status": "TERMINATED",
+       "city": "Harbin",
+       "country": "China"
+      },
+      {
+       "facility": "Union Hospi, Tongji Med College, Huazhong Univ. Scien&Tech",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Wuhan",
+       "country": "China"
+      },
+      {
+       "facility": "Hunan Cancer Hospital - Oncology Department",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Changsha",
+       "country": "China"
+      },
+      {
+       "facility": "Nanjing Drum Tower Hospital, The Affiliated Hospital of Nanjing University Medical School",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Nanjing",
+       "country": "China"
+      },
+      {
+       "facility": "Zhejiang University School of Medicine - Taizhou Hospital of Zhejiang Province",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Taizhou",
+       "country": "China"
+      },
+      {
+       "facility": "Qilu Hospital of Shandong University",
+       "status": "TERMINATED",
+       "city": "Jinan",
+       "country": "China"
+      },
+      {
+       "facility": "Shandong University - Shandong Cancer Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Jinan",
+       "country": "China"
+      },
+      {
+       "facility": "Shanghai Chest Hospital, Shanghai Jiaotong University",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Shanghai",
+       "country": "China"
+      },
+      {
+       "facility": "West China Hospital Sichuan University",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Chengdu",
+       "country": "China"
+      },
+      {
+       "facility": "Sir Run Run Shaw Hospital, Zhejiang Univ. School of Medicine - Oncology Department",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Hangzhou",
+       "country": "China"
+      },
+      {
+       "facility": "Zhejiang Cancer Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Hangzhou",
+       "country": "China"
+      },
+      {
+       "facility": "UNICANCER - Centre Leon-Berard (CLB) - Medical oncology",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Lyon",
+       "country": "France"
+      },
+      {
+       "facility": "Institut Bergonie - Unicancer Nouvelle Aquitaine - Service Oncologie medicale",
+       "status": "COMPLETED",
+       "city": "Bordeaux",
+       "country": "France"
+      },
+      {
+       "facility": "Hopital Nord Laennec - Oncologie medicale thoracique et digestive",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Nantes",
+       "country": "France"
+      },
+      {
+       "facility": "Institut de Cancerologie Ouest - Saint Herblain - Oncologie medicale",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Saint-Herblain",
+       "country": "France"
+      },
+      {
+       "facility": "AP-HM - Hopital de la Timone - Centre d'Essais en Cancerologie",
+       "status": "WITHDRAWN",
+       "city": "Marseille",
+       "country": "France"
+      },
+      {
+       "facility": "Institut Curie - Paris - Oncologie medicale",
+       "status": "COMPLETED",
+       "city": "Paris",
+       "country": "France"
+      },
+      {
+       "facility": "Gustave Roussy - Departement Oncologie-Radiotherapie",
+       "status": "COMPLETED",
+       "city": "Villejuif",
+       "country": "France"
+      },
+      {
+       "facility": "Prince of Wales Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Hong Kong",
+       "country": "Hong Kong"
+      },
+      {
+       "facility": "Queen Mary Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Hong Kong",
+       "country": "Hong Kong"
+      },
+      {
+       "facility": "Hong Kong United Oncology Centre",
+       "status": "RECRUITING",
+       "city": "Kowloon",
+       "country": "Hong Kong"
+      },
+      {
+       "facility": "Rabin Medical Center | Beilinson Campus",
+       "status": "COMPLETED",
+       "city": "Petah Tikva",
+       "country": "Israel"
+      },
+      {
+       "facility": "Chaim Sheba Medical Center",
+       "status": "COMPLETED",
+       "city": "Ramat Gan",
+       "country": "Israel"
+      },
+      {
+       "facility": "IRCCS Istituto Nazionale Tumori Fondazione Pascale",
+       "status": "WITHDRAWN",
+       "city": "Naples",
+       "country": "Italy"
+      },
+      {
+       "facility": "Azienda Ospedaliero Universitaria Parma - SC Oncologia Medica",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Parma",
+       "country": "Italy"
+      },
+      {
+       "facility": "Centro di Riferimento Oncologico di Aviano - Oncologia Medica e dei Tumori Immuno-Correlati",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Aviano",
+       "country": "Italy"
+      },
+      {
+       "facility": "Fondazione Policlinico Universitario Agostino Gemelli IRCCS - UOC Fase I",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Rome",
+       "country": "Italy"
+      },
+      {
+       "facility": "Fondazione IRCCS Istituto Nazionale dei Tumori - S. C. Oncologia Medica 1",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Milan",
+       "country": "Italy"
+      },
+      {
+       "facility": "Istituto Europeo di Oncologia s.r.l - Sviluppo di nuovi farmaci per Terapie Innovative",
+       "status": "COMPLETED",
+       "city": "Milan",
+       "country": "Italy"
+      },
+      {
+       "facility": "Humanitas Mirasole S.p.A. - Oncologia Medica ed Ematologia",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Rozzano",
+       "country": "Italy"
+      },
+      {
+       "facility": "Azienda Ospedaliero-Universitaria San Luigi Gonzaga - Oncologia Medica",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Orbassano",
+       "country": "Italy"
+      },
+      {
+       "facility": "Centro Ricerche Cliniche Di Verona S.r.l. - Oncologia",
+       "status": "COMPLETED",
+       "city": "Verona",
+       "country": "Italy"
+      },
+      {
+       "facility": "Aichi Cancer Center Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Nagoya",
+       "country": "Japan"
+      },
+      {
+       "facility": "National Cancer Center Hospital East",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Kashiwa",
+       "country": "Japan"
+      },
+      {
+       "facility": "National Hospital Organization Shikoku Cancer Center",
+       "status": "COMPLETED",
+       "city": "Matsuyama",
+       "country": "Japan"
+      },
+      {
+       "facility": "Hokkaido University Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Sapporo",
+       "country": "Japan"
+      },
+      {
+       "facility": "Kanagawa Cancer Center",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Yokohama",
+       "country": "Japan"
+      },
+      {
+       "facility": "Kindai University Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Sakai",
+       "country": "Japan"
+      },
+      {
+       "facility": "Shizuoka Cancer Center",
+       "status": "COMPLETED",
+       "city": "Sunto",
+       "country": "Japan"
+      },
+      {
+       "facility": "National Cancer Center Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Chuo-ku",
+       "country": "Japan"
+      },
+      {
+       "facility": "Tottori University Hospital",
+       "status": "COMPLETED",
+       "city": "Yonago",
+       "country": "Japan"
+      },
+      {
+       "facility": "Okayama University Hospital",
+       "status": "TERMINATED",
+       "city": "Okayama",
+       "country": "Japan"
+      },
+      {
+       "facility": "Osaka International Cancer Institute",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Osaka",
+       "country": "Japan"
+      },
+      {
+       "facility": "Radboud University Medical Center | Afdeling Interne Geneeskunde",
+       "status": "WITHDRAWN",
+       "city": "Nijmegen",
+       "country": "Netherlands"
+      },
+      {
+       "facility": "Nederlands Kanker Instituut",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Amsterdam",
+       "country": "Netherlands"
+      },
+      {
+       "facility": "Erasmus University Medical Center | Research Department - Lung Diseases",
+       "status": "COMPLETED",
+       "city": "Rotterdam",
+       "country": "Netherlands"
+      },
+      {
+       "facility": "Uniwersyteckie Centrum Kliniczne",
+       "status": "WITHDRAWN",
+       "city": "Gdansk",
+       "country": "Poland"
+      },
+      {
+       "facility": "Uniwersytecki Szpital Kliniczny Nr 2 Uniwersytetu Medycznego w \u0141odzi",
+       "status": "WITHDRAWN",
+       "city": "Lodz",
+       "country": "Poland"
+      },
+      {
+       "facility": "START Research Portugal",
+       "status": "WITHDRAWN",
+       "city": "Lisbon",
+       "country": "Portugal"
+      },
+      {
+       "facility": "Hospital Santa Maria | Centro de Investigacao Clinica",
+       "status": "WITHDRAWN",
+       "city": "Lisbon",
+       "country": "Portugal"
+      },
+      {
+       "facility": "IPO Porto",
+       "status": "RECRUITING",
+       "city": "Porto",
+       "country": "Portugal"
+      },
+      {
+       "facility": "National University Hospital Medical Centre",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Singapore",
+       "country": "Singapore"
+      },
+      {
+       "facility": "National Cancer Center Singapore - Oncology Department",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Singapore",
+       "country": "Singapore"
+      },
+      {
+       "facility": "Curie Oncology | Mount Elizabeth Novena",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Singapore",
+       "country": "Singapore"
+      },
+      {
+       "facility": "Seoul National University Bundang Hospital | Hematology and Medical Oncology",
+       "status": "COMPLETED",
+       "city": "Seongnam-si",
+       "country": "South Korea"
+      },
+      {
+       "facility": "St Vincent's Hospital | Oncology",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Suwon",
+       "country": "South Korea"
+      },
+      {
+       "facility": "Chungbuk National University Hospital | Hematology and Oncology",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Chungcheongbuk-do",
+       "country": "South Korea"
+      },
+      {
+       "facility": "Seoul National University Hospital | Oncology",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Jongno -Gu",
+       "country": "South Korea"
+      },
+      {
+       "facility": "Severance Hospital | Oncology",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Seoul",
+       "country": "South Korea"
+      },
+      {
+       "facility": "Asan Medical Center | Oncology",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Seoul",
+       "country": "South Korea"
+      },
+      {
+       "facility": "Samsung Medical Center | Oncology",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Seoul",
+       "country": "South Korea"
+      },
+      {
+       "facility": "Institut Catala D'oncologia | Hospitalet | Oncologia",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "L'Hospitalet de Llobregat",
+       "country": "Spain"
+      },
+      {
+       "facility": "Hospital Universitari Dexeus Grupo Quironsalud | Oncologia",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Barcelona",
+       "country": "Spain"
+      },
+      {
+       "facility": "Hospital Universitari Vall D Hebron | Oncologia",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Barcelona",
+       "country": "Spain"
+      },
+      {
+       "facility": "Hospital Universitario Fundacion Jimenez Diaz | Oncologia",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Madrid",
+       "country": "Spain"
+      },
+      {
+       "facility": "Hospital Universitario Hm Sanchinarro | Oncologia",
+       "status": "COMPLETED",
+       "city": "Madrid",
+       "country": "Spain"
+      },
+      {
+       "facility": "Hospital Universitario Virgen De La Victoria | Oncologia",
+       "status": "WITHDRAWN",
+       "city": "M\u00e1laga",
+       "country": "Spain"
+      },
+      {
+       "facility": "Hospital Universitario Y Politecnico La Fe | Oncologia",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Valencia",
+       "country": "Spain"
+      },
+      {
+       "facility": "Chung Shan Medical University Hospital",
+       "status": "WITHDRAWN",
+       "city": "Taichung",
+       "country": "Taiwan"
+      },
+      {
+       "facility": "Taichung Veterans General Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Taichung",
+       "country": "Taiwan"
+      },
+      {
+       "facility": "National Cheng Kung University Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Tainan",
+       "country": "Taiwan"
+      },
+      {
+       "facility": "Chi-Mei Medical Center, Liouyine",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Tainan",
+       "country": "Taiwan"
+      },
+      {
+       "facility": "National Taiwan University Hospital",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Taipei",
+       "country": "Taiwan"
+      },
+      {
+       "facility": "Taipei Medical University (TMU) - Shuang Ho Hospital (SHH)",
+       "status": "WITHDRAWN",
+       "city": "Taipei",
+       "country": "Taiwan"
+      },
+      {
+       "facility": "Chang Gung Memorial Hospital at Linkou",
+       "status": "ACTIVE_NOT_RECRUITING",
+       "city": "Taoyuan",
+       "country": "Taiwan"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "protocolSection": {
+    "identificationModule": {
+     "nctId": "NCT06573073",
+     "briefTitle": "Evaluation of Clinical Performance and IVD Test of LifeOS Digital PCR Liquid Biopsy Kits for EGFR T790M Mutation"
+    },
+    "descriptionModule": {
+     "briefSummary": "Liquid biopsy plays a pivotal role in cancer therapeutics, encompassing critical applications such as early cancer detection, disease progression monitoring, and tailored treatment plan formulation, heralded as a pivotal avenue for the future of cancer management. Established in 2015, LifeOS Genomics Co., Ltd. stands among the select few domestic enterprises pioneering the autonomous development of digital Polymerase Chain Reaction (PCR) technology. The company's automated nucleic acid amplification quantitative analysis platform (QLoci\u2122 md1000 Analyzer) demonstrates outstanding proficiency, featuring sixty thousand wells per PCR chip. Integrating digital PCR technology, it elevates analytical sensitivity beyond 0.1%. LifeOS commissioned the Core Laboratory of Pharmacogenomics at the National Taiwan University to conduct clinical validation assessments for their developed \"EGFR T790M Mutation Detection Assay Kit.\" This assay kit secured official registration by the Taiwan Food and Drug Administration (TFDA) as a Laboratory Developed Test (LDT) in 2023, permitting the issuance of medical testing reports.\n\nThis initiative aims to validate the detection capabilities of LifeOS Genomics Co., Ltd.'s \"EGFR T790M Mutation Detection Assay Kit\" prospectively clinically in clinical lung cancer patient plasma samples, addressing unmet clinical needs for early cancer detection, disease progression monitoring, and aiding physicians in diagnosis and pharmacotherapy."
+    },
+    "conditionsModule": {
+     "conditions": [
+      "Non Small Cell Lung Cancer",
+      "EGFR T790M"
+     ]
+    },
+    "designModule": {},
+    "armsInterventionsModule": {},
+    "eligibilityModule": {
+     "eligibilityCriteria": "Inclusion Criteria:\n\n1. aged \u226518 years old.\n2. Patients with Stage IIIB or IV non-small cell lung cancer (NSCLC) with EGFR mutations.\n\nExclusion Criteria:\n\n1. Pregnant women.\n2. Any condition that, in the opinion of the doctors, may pose a severe risk to the patient or interfere with trial results or participation.",
+     "healthyVolunteers": false,
+     "sex": "ALL",
+     "minimumAge": "18 Years",
+     "stdAges": [
+      "ADULT",
+      "OLDER_ADULT"
+     ],
+     "studyPopulation": "Late stage NSCLC patients with EGFR activating mutations",
+     "samplingMethod": "NON_PROBABILITY_SAMPLE"
+    },
+    "contactsLocationsModule": {
+     "centralContacts": [
+      {
+       "name": "Sung-Liang Yu, PhD",
+       "role": "CONTACT",
+       "phone": "+886 23123456",
+       "phoneExt": "288697",
+       "email": "slyu@ntu.edu.tw"
+      }
+     ],
+     "locations": [
+      {
+       "facility": "National Taiwan University",
+       "status": "RECRUITING",
+       "city": "Taipei",
+       "country": "Taiwan"
+      }
+     ]
+    }
+   }
+  }
+ ]
+}
