@@ -31,10 +31,26 @@ export function parseJsonReply(text: string): unknown {
 
 type Client = Pick<Anthropic, "beta">;
 
-/** A `sample` with the same `.json(prompt, {signal})` call the app uses inside Claude. */
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+/** Image blobs as base64 content blocks, sent before the prompt text. */
+export async function imageBlocks(images: Blob[] = []) {
+  const blocks = [];
+  for (const img of images) {
+    if (!IMAGE_TYPES.has(img.type)) throw { code: "image_rejected", message: `Unsupported image type ${img.type || "unknown"}.` } satisfies SampleError;
+    const bytes = new Uint8Array(await img.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    blocks.push({ type: "image" as const, source: { type: "base64" as const, media_type: img.type as "image/jpeg", data: btoa(bin) } });
+  }
+  return blocks;
+}
+
+/** A `sample` with the same `.json(prompt, {signal, images})` call the app uses inside Claude. */
 export function makeSample(apiKey: string, client: Client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true })) {
-  async function json(prompt: string, opts: { signal?: AbortSignal } = {}): Promise<unknown> {
+  async function json(prompt: string, opts: { signal?: AbortSignal; images?: Blob[] } = {}): Promise<unknown> {
     let res;
+    const content = opts.images?.length ? [...(await imageBlocks(opts.images)), { type: "text" as const, text: prompt }] : prompt;
     try {
       res = await client.beta.messages.create(
         {
@@ -43,7 +59,7 @@ export function makeSample(apiKey: string, client: Client = new Anthropic({ apiK
           betas: ["server-side-fallback-2026-07-01"],
           // If a safety classifier declines, the API retries on a suitable fallback model in the same call.
           fallbacks: "default",
-          messages: [{ role: "user", content: prompt }],
+          messages: [{ role: "user", content }],
         },
         { signal: opts.signal },
       );

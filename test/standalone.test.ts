@@ -35,6 +35,17 @@ describe("makeSample", () => {
     expect(calls[0].params).toMatchObject({ model: MODEL, fallbacks: "default", messages: [{ role: "user", content: "hello" }] });
   });
 
+  test("sends images before the prompt text", async () => {
+    const calls: any[] = [];
+    const s = makeSample("k", fake({ stop_reason: "end_turn", content: [{ type: "text", text: '{"facts":[]}' }] }, calls));
+    const png = new Blob([new Uint8Array([137, 80, 78, 71])], { type: "image/png" });
+    await s.json("read this", { images: [png] });
+    const content = calls[0].params.messages[0].content;
+    expect(content[0]).toMatchObject({ type: "image", source: { type: "base64", media_type: "image/png", data: "iVBORw==" } });
+    expect(content[1]).toEqual({ type: "text", text: "read this" });
+    await expect(s.json("x", { images: [new Blob(["x"], { type: "application/pdf" })] })).rejects.toMatchObject({ code: "image_rejected" });
+  });
+
   test("maps refusals and truncation to the app's error codes", async () => {
     await expect(makeSample("k", fake({ stop_reason: "refusal", content: [] })).json("x")).rejects.toMatchObject({ code: "refused" });
     await expect(makeSample("k", fake({ stop_reason: "max_tokens", content: [] })).json("x")).rejects.toMatchObject({ code: "invalid_json" });
