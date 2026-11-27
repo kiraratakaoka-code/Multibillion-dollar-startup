@@ -7,7 +7,8 @@
     "start": "bun run src/server.ts",
     "match": "bun run src/cli.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "snapshot": "bun run scripts/build-snapshot.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.14.0",

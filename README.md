@@ -65,3 +65,15 @@ The tests use a recorded ClinicalTrials.gov response (`test/fixtures/`) and a fa
 - Run the 5 hand-run tumor board cases (the design doc's assignment) through it and note what was wrong or missing.
 - Contact details and sponsor travel-support info per site.
 - Uploading PDFs and photos of medical records.
+
+## Web version (no API key)
+
+Live at https://claude.ai/artifact/Ee8uiZCgqSRLCs2ga4Xgxa (private until shared from its Share menu).
+
+`web/trial-matcher.html` is published as a claude.ai artifact. It uses Claude through the viewer's own claude.ai account,
+so it needs no API key. Published pages can't call ClinicalTrials.gov, so it reads `web/trials.json`: a snapshot of every
+recruiting cancer treatment trial with a site in Latin America. Refresh it with:
+
+```bash
+bun run snapshot
+```
