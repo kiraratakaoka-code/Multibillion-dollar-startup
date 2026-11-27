@@ -145,9 +145,9 @@ export function makeDb(storage: Storage = localStorage) {
 
 /* ---------------- the person using this browser ---------------- */
 const AVATAR = "data:image/svg+xml;utf8," + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#0b6b57"/><text x="16" y="21" font-family="sans-serif" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">Y</text></svg>');
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><circle cx="16" cy="16" r="16" fill="#1f3f6e"/><text x="16" y="21" font-family="sans-serif" font-size="14" font-weight="700" fill="#fff" text-anchor="middle">Y</text></svg>');
 export function makeUser() {
-  const me = { id: "local", name: "You", avatarUrl: AVATAR, color: "#0b6b57", email: null, isOwner: true, canEdit: true };
+  const me = { id: "local", name: "You", avatarUrl: AVATAR, color: "#1f3f6e", email: null, isOwner: true, canEdit: true };
   return {
     me: async () => me,
     can: async () => true,

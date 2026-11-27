@@ -9,191 +9,165 @@
 <title>Eligo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-  /* Layout: app shell. Fixed sidebar (desktop) or top bar + bottom tabs (phone); one scrolling content column per view.
-     Palette: chart paper and ink, one surgical-green accent. No gradients. */
+  /* Clinical software, not a landing page: white work surfaces on light grey, one navy accent, 1px rules,
+     small radii, no shadows or gradients, dense type in one family. Layout: top bar, then a single work column. */
   :root {
-    --bg: #f2f4f3; --surface: #ffffff; --surface-2: #f6f8f7; --fg: #0f1714; --muted: #57635e; --line: #dde3e0;
-    --accent: #0b6b57; --accent-fg: #ffffff; --accent-soft: #e2f0eb; --accent-ink: #08503f;
-    --likely: #17784a; --likely-soft: #e3f4ea; --possible: #9a6200; --possible-soft: #fbf0dc;
-    --unlikely: #6b7570; --unlikely-soft: #eceeed; --danger: #b42318; --warn-bg: #fff6e0; --warn-fg: #5c4300;
-    --hero-bg: #0f1714; --hero-fg: #eef3f1; --hero-muted: #a9b7b1; --hero-line: #2a3631;
-    --shadow: 0 1px 2px rgba(15, 23, 20, .05);
-    --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
-    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --bg: #f5f6f8; --surface: #ffffff; --surface-2: #f8f9fb; --fg: #1a1f26; --muted: #5f6873; --faint: #8a929c; --line: #dfe3e8; --line-strong: #c9cfd6;
+    --accent: #1f3f6e; --accent-fg: #ffffff; --accent-soft: #edf2f8; --accent-ink: #1f3f6e; --link: #1f4f8f;
+    --likely: #1e6b45; --possible: #8a5a00; --unlikely: #6a737d; --open: #1e6b45;
+    --danger: #a3261b; --warn-bg: #fdf6e7; --warn-fg: #5a4210; --warn-line: #ecd9a8;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-display: var(--font-body);
     --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
-    --sidebar: 232px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #0c1110; --surface: #141b19; --surface-2: #19221f; --fg: #e7eeeb; --muted: #97a59f; --line: #25302c;
-      --accent: #5fc4a6; --accent-fg: #06201a; --accent-soft: #163029; --accent-ink: #a6e3d0;
-      --likely: #57c08b; --likely-soft: #16302a; --possible: #e3ad4c; --possible-soft: #33291a;
-      --unlikely: #94a09b; --unlikely-soft: #202826; --danger: #f28b82; --warn-bg: #3a2f14; --warn-fg: #f0d58a;
-      --hero-bg: #141b19; --hero-fg: #eef3f1; --hero-muted: #a9b7b1; --hero-line: #2a3631;
-      --shadow: none; color-scheme: dark;
+      --bg: #111418; --surface: #181c21; --surface-2: #1d2228; --fg: #e3e7ec; --muted: #9aa3ad; --faint: #737c86; --line: #2a3038; --line-strong: #3a424c;
+      --accent: #8fb0dd; --accent-fg: #0e1725; --accent-soft: #1d2735; --accent-ink: #b9cfee; --link: #9fbde6;
+      --likely: #6cc497; --possible: #e0b25a; --unlikely: #97a0aa; --open: #6cc497;
+      --danger: #f08b80; --warn-bg: #2a2416; --warn-fg: #ecd59a; --warn-line: #4a3f22; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #0c1110; --surface: #141b19; --surface-2: #19221f; --fg: #e7eeeb; --muted: #97a59f; --line: #25302c;
-    --accent: #5fc4a6; --accent-fg: #06201a; --accent-soft: #163029; --accent-ink: #a6e3d0;
-    --likely: #57c08b; --likely-soft: #16302a; --possible: #e3ad4c; --possible-soft: #33291a;
-    --unlikely: #94a09b; --unlikely-soft: #202826; --danger: #f28b82; --warn-bg: #3a2f14; --warn-fg: #f0d58a;
-    --hero-bg: #141b19; --hero-fg: #eef3f1; --hero-muted: #a9b7b1; --hero-line: #2a3631;
-    --shadow: none; color-scheme: dark;
+    --bg: #111418; --surface: #181c21; --surface-2: #1d2228; --fg: #e3e7ec; --muted: #9aa3ad; --faint: #737c86; --line: #2a3038; --line-strong: #3a424c;
+    --accent: #8fb0dd; --accent-fg: #0e1725; --accent-soft: #1d2735; --accent-ink: #b9cfee; --link: #9fbde6;
+    --likely: #6cc497; --possible: #e0b25a; --unlikely: #97a0aa; --open: #6cc497;
+    --danger: #f08b80; --warn-bg: #2a2416; --warn-fg: #ecd59a; --warn-line: #4a3f22; color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { min-height: 100%; }
-  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
-  h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
-  h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.15; }
-  h2 { font-size: 1.15rem; font-weight: 700; }
-  h3 { font-size: 1rem; font-weight: 700; }
+  body { background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body); -webkit-font-smoothing: antialiased; }
+  h1, h2, h3 { font-family: var(--font-body); margin: 0; font-weight: 600; letter-spacing: 0; }
+  h1 { font-size: 1.3rem; line-height: 1.3; }
+  h2 { font-size: 1rem; }
+  h3 { font-size: .93rem; }
   p { margin: 0; }
-  a { color: var(--accent); }
+  a { color: var(--link); text-underline-offset: 2px; }
   button, input, textarea, select { font: inherit; color: inherit; }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-  /* Shell: one sticky bar across the top; brand left, sections in a row, account right. */
+  /* Top bar */
   body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
   .topnav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); }
-  .topnav .inner { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 28px; padding-block: 10px;
+  .topnav .inner { max-width: 1160px; margin: 0 auto; display: flex; align-items: center; gap: 24px; height: 52px;
     padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
-  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); flex: none; }
-  .brand b { font: 800 1.2rem var(--font-display); letter-spacing: -0.02em; }
-  .nav { display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+  .brand { display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--fg); flex: none; }
+  .brand b { font-weight: 600; font-size: 1.05rem; }
+  .nav { display: flex; align-items: stretch; gap: 4px; height: 100%; min-width: 0; overflow-x: auto; scrollbar-width: none; }
   .nav::-webkit-scrollbar { display: none; }
-  .nav a { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; color: var(--muted); text-decoration: none; font-weight: 500; white-space: nowrap; }
-  .nav a:hover { background: var(--surface-2); color: var(--fg); }
-  .nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-ink); }
-  .nav svg { width: 17px; height: 17px; flex: none; }
+  .nav a { display: flex; align-items: center; gap: 7px; padding: 0 10px; color: var(--muted); text-decoration: none; font-weight: 500; white-space: nowrap;
+    border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .nav a:hover { color: var(--fg); }
+  .nav a[aria-current="page"] { color: var(--fg); border-bottom-color: var(--accent); }
+  .nav svg { width: 16px; height: 16px; flex: none; }
   .nav .short { display: none; }
-  .nav .count { font-size: .72rem; font-weight: 600; background: var(--surface-2); color: var(--muted); border-radius: 999px; padding: 0 7px; font-variant-numeric: tabular-nums; }
-  .nav a[aria-current="page"] .count { background: var(--surface); }
-  .me { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: .9rem; color: var(--muted); flex: none; }
-  .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; background: var(--surface-2); }
+  .nav .count { font: 500 .72rem var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+  .me { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: .88rem; color: var(--muted); flex: none; }
+  .avatar { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; flex: none; background: var(--surface-2); }
   main { min-width: 0; }
-  .view { max-width: 1180px; margin: 0 auto; padding-block: 28px 80px;
+  .view { max-width: 1160px; margin: 0 auto; padding-block: 24px 64px;
     padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
-    display: flex; flex-direction: column; gap: 22px; }
-  .view-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
-  .view-head .sub { color: var(--muted); margin-top: 4px; max-width: 62ch; }
-
+    display: flex; flex-direction: column; gap: 18px; }
+  .view-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .view-head .sub { color: var(--muted); margin-top: 2px; max-width: 70ch; }
   @media (max-width: 760px) {
-    /* Phone: brand and account on the first row, the sections in a horizontal row below. */
-    .topnav .inner { flex-wrap: wrap; gap: 8px 12px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-    .nav { order: 3; flex-basis: 100%; margin-inline: -4px; }
-    .nav a { padding: 7px 10px; font-size: .9rem; }
+    .topnav .inner { flex-wrap: wrap; height: auto; gap: 0 12px; padding-top: 8px;
+      padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .nav { order: 3; flex-basis: 100%; height: 40px; margin-inline: -10px; }
     .nav svg, .nav .long { display: none; }
     .nav .short { display: inline; }
     .me span.name { display: none; }
-    .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 60px; }
-    h1 { font-size: 1.45rem; }
+    .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 48px; }
   }
 
   /* Building blocks */
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); min-width: 0; }
-  .stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; min-width: 0; }
+  .stack { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
   .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-  .label { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+  .label { font-size: .75rem; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
   .muted { color: var(--muted); }
-  .small { font-size: .87rem; }
+  .small { font-size: .86rem; }
   .mono { font-family: var(--font-mono); font-size: .82rem; }
-  .btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 9px; padding: 9px 15px; cursor: pointer; border: 1px solid var(--line);
-    background: var(--surface); color: var(--fg); font-weight: 500; text-decoration: none; white-space: nowrap; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 4px; padding: 6px 12px; cursor: pointer; border: 1px solid var(--line-strong);
+    background: var(--surface); color: var(--fg); font-weight: 500; text-decoration: none; white-space: nowrap; line-height: 1.4; }
   .btn:hover { background: var(--surface-2); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
-  .btn.primary:hover { filter: brightness(1.07); }
-  .btn.ghost { border-color: transparent; background: transparent; color: var(--accent); padding-inline: 8px; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .btn.primary:hover { filter: brightness(1.1); }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--link); padding-inline: 4px; }
   .btn.danger { color: var(--danger); }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .btn svg { width: 16px; height: 16px; }
-  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-  .field label { font-weight: 600; font-size: .9rem; }
-  input[type="text"], textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
-  textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
-  .notice { background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; padding: 10px 14px; font-size: .9rem; }
+  .btn svg { width: 15px; height: 15px; }
+  .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .field label { font-weight: 500; font-size: .88rem; }
+  input[type="text"], input[type="password"], textarea, select { width: 100%; padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface); }
+  textarea { min-height: 150px; resize: vertical; line-height: 1.5; }
+  .notice { background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--warn-line); border-radius: 4px; padding: 9px 12px; font-size: .88rem; }
   .error { color: var(--danger); }
-  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 600; padding: 3px 9px; border-radius: 999px;
-    background: var(--unlikely-soft); color: var(--unlikely); text-transform: uppercase; letter-spacing: .05em; }
-  .pill[data-tone="likely"], .pill[data-tone="open"] { background: var(--likely-soft); color: var(--likely); }
-  .pill[data-tone="possible"] { background: var(--possible-soft); color: var(--possible); }
-  .chip { font-size: .78rem; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
-  dl.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 18px; margin: 0; }
-  dl.facts dt { color: var(--muted); font-size: .9rem; } dl.facts dd { margin: 0; overflow-wrap: anywhere; }
-  ul.list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
-  .empty { text-align: center; padding: 40px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-  .empty svg { width: 40px; height: 40px; color: var(--muted); }
-  .empty p { max-width: 44ch; color: var(--muted); }
-  details summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+  /* Status: a small square and plain text, as on a lab report. */
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--unlikely); text-transform: capitalize; }
+  .pill::before { content: ""; width: 8px; height: 8px; border-radius: 1px; background: currentColor; }
+  .pill[data-tone="likely"] { color: var(--likely); }
+  .pill[data-tone="possible"] { color: var(--possible); }
+  .pill[data-tone="open"] { color: var(--open); }
+  .chip { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+  .chip + .chip::before, .pill + .chip::before { content: "·"; margin-right: 8px; color: var(--faint); }
+  dl.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 0; }
+  dl.facts dt { color: var(--muted); } dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+  ul.list { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+  .empty { padding: 28px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  .empty svg { display: none; }
+  .empty p { max-width: 60ch; color: var(--muted); }
+  details summary { cursor: pointer; color: var(--link); }
   details[open] summary { margin-bottom: 8px; }
-  .clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; transition: border-color .15s; }
-  .clickable:hover { border-color: var(--accent); }
+  .clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; }
+  .clickable:hover { border-color: var(--line-strong); background: var(--surface-2); }
+  .section-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 
-  /* Home */
-  .hero { border-radius: 14px; padding: 36px; color: var(--hero-fg); background: var(--hero-bg);
-    display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: center; }
-  .hero .copy { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-  .hero h1 { font-size: 2.5rem; line-height: 1.05; max-width: 15ch; color: var(--hero-fg); font-weight: 800; }
-  .hero p { max-width: 52ch; color: var(--hero-muted); font-size: 1.02rem; }
-  .hero .kicker { font: 500 .78rem var(--font-mono); color: var(--hero-muted); letter-spacing: .04em; }
-  .hero .btn { border-color: var(--hero-line); background: transparent; color: var(--hero-fg); }
-  .hero .btn:hover { background: var(--hero-line); }
-  .hero .btn.primary { background: var(--hero-fg); color: var(--hero-bg); border-color: var(--hero-fg); }
-  .demo { background: var(--surface); color: var(--fg); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px;
-    border: 1px solid var(--hero-line); min-width: 0; }
-  .demo p { color: var(--fg); }
-  .demo p.muted { color: var(--muted); }
-  .demo .quote { font-size: .88rem; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; font-style: italic; }
-  .demo .trial { padding: 12px; border: 1px solid var(--line); border-radius: 8px; box-shadow: none; }
-  .facts-line { display: flex; flex-wrap: wrap; gap: 6px 28px; padding: 14px 0; border-block: 1px solid var(--line); }
-  .facts-line div { display: flex; align-items: baseline; gap: 8px; }
-  .facts-line b { font: 700 1.25rem var(--font-display); font-variant-numeric: tabular-nums; }
-  @media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); padding: 26px 20px; } .hero h1 { font-size: 1.9rem; } }
-  .pillar { display: flex; flex-direction: column; gap: 10px; }
-  .pillar .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
-  .pillar .ic svg { width: 20px; height: 20px; }
-  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; counter-reset: step; }
-  .flow > div { padding: 16px 18px; border-left: 2px solid var(--line); counter-increment: step; }
-  .flow > div::before { content: counter(step); font: 800 .8rem var(--font-display); color: var(--accent); display: block; margin-bottom: 4px; }
+  /* Overview */
+  .source { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: .86rem; color: var(--muted); padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+  .source b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .steps-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .scope { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 
   /* Trials */
-  .trial { border-left: 4px solid var(--unlikely); display: flex; flex-direction: column; gap: 9px; }
-  .trial[data-fit="likely"] { border-left-color: var(--likely); }
-  .trial[data-fit="possible"] { border-left-color: var(--possible); }
+  .trial { display: flex; flex-direction: column; gap: 8px; }
   .trial .t-title { font-weight: 600; }
   .steps { display: flex; flex-direction: column; gap: 6px; }
   .steps div { color: var(--muted); display: flex; gap: 8px; align-items: center; }
   .steps div[data-state="active"] { color: var(--fg); font-weight: 500; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
+  .dot { width: 7px; height: 7px; border-radius: 1px; background: var(--line-strong); flex: none; }
   .steps div[data-state="active"] .dot { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
   .steps div[data-state="done"] .dot { background: var(--likely); }
   @keyframes pulse { 50% { opacity: .3; } }
-  @media (prefers-reduced-motion: reduce) { .steps div[data-state="active"] .dot { animation: none; } .clickable { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .steps div[data-state="active"] .dot { animation: none; } }
 
   /* Tumor board */
   .opinion { display: flex; gap: 12px; align-items: flex-start; }
   .opinion .body { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
-  .opinion .who { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+  .opinion .who { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
   .opinion .who b { font-weight: 600; }
-  .brief { background: var(--accent-soft); border: 1px solid transparent; }
-  .split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  .brief { background: var(--surface-2); }
+  .split { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; align-items: start; }
   @media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); } }
   .tablewrap { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 500; background: var(--surface-2); }
+  tr:last-child td { border-bottom: 0; }
   tr.rowlink { cursor: pointer; } tr.rowlink:hover td { background: var(--surface-2); }
+  footer.foot { max-width: 1160px; margin: 0 auto; padding-block: 0 32px; font-size: .8rem; color: var(--faint);
+    padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
 </style>
 
 <div class="app">
   <header class="topnav">
     <div class="inner">
       <a class="brand" href="#home" aria-label="Eligo home">
-        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M7 16H21A7.5 7.5 0 1 0 18.8 21.3" stroke="var(--accent-fg)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16H23.2" stroke="var(--accent-fg)" stroke-width="3" stroke-linecap="round"/><circle cx="26.4" cy="16" r="2.3" fill="var(--accent-fg)"/></svg>
+        <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="var(--accent)"/><path d="M7 16H21A7.5 7.5 0 1 0 18.8 21.3" stroke="var(--accent-fg)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16H23.2" stroke="var(--accent-fg)" stroke-width="3" stroke-linecap="round"/><circle cx="26.4" cy="16" r="2.3" fill="var(--accent-fg)"/></svg>
         <b>Eligo</b>
       </a>
       <nav class="nav" id="side-nav" aria-label="Sections"></nav>
@@ -201,6 +175,7 @@
     </div>
   </header>
   <main><div id="view"></div></main>
+  <footer class="foot" id="foot"></footer>
 </div>
 
 <script>
@@ -455,6 +430,7 @@ const go = (hash) => { if (location.hash !== "#" + hash) location.hash = hash; e
 const section = (r) => r.name === "patient" ? "patients" : r.name === "board" ? "boards" : r.name;
 
 function renderShell() {
+  const foot = $("#foot"); if (foot) foot.textContent = `Eligo · decision support for oncologists, not medical advice · trial data from ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}`;
   const cur = section(route());
   const counts = { patients: S.patients.length, boards: S.boards.filter((b) => b.status === "open").length };
   $("#side-nav").replaceChildren(...NAV.map(([k, label]) => h("a", { href: `#${k}`, "aria-current": cur === k ? "page" : null },
@@ -496,45 +472,46 @@ function loadingOr(key, fn) {
 
 function viewHome() {
   const open = S.boards.filter((b) => b.status === "open");
-  return h("div", { class: "view" },
-    h("section", { class: "hero" },
-      h("div", { class: "copy" },
-        h("span", { class: "kicker" }, "CANCER TRIAL ACCESS · LATIN AMERICA"),
-        h("h1", {}, "The trial that could help is often one bus ride away."),
-        h("p", {}, "Eligo reads a patient's records in any language, checks recruiting trials against their eligibility criteria, explains the options to the family in their own language, and puts hard cases in front of specialists through remote tumor boards."),
-        h("div", { class: "row" }, h("a", { class: "btn primary", href: "#match" }, "Match a patient"), h("a", { class: "btn", href: "#boards" }, "Open tumor boards"))),
-      h("div", { class: "demo", "aria-label": "Example result" },
-        h("div", { class: "row", style: "justify-content:space-between" }, h("span", { class: "label" }, "Example"), h("span", { class: "mono muted" }, "Asunción → São Paulo")),
-        h("p", { class: "quote" }, "“Mujer de 58 años, adenocarcinoma de pulmón estadio IV, EGFR exón 19, progresión con osimertinib…”"),
-        h("div", { class: "trial", "data-fit": "possible" },
-          h("div", { class: "row" }, h("span", { class: "pill", "data-tone": "possible" }, "possible"), h("span", { class: "chip" }, "Sites in patient's region"), h("span", { class: "chip" }, "Phase 3")),
-          h("div", { class: "t-title small" }, "EGFR-mutant non-small cell lung cancer after osimertinib"),
-          h("p", { class: "small" }, "Este estudio prueba un tratamiento nuevo para cáncer de pulmón con mutación EGFR que dejó de responder a osimertinib. Su oncólogo debe confirmar si usted califica.")),
-        h("p", { class: "muted small" }, "Matched against eligibility criteria, explained in the patient's language."))),
-    h("div", { class: "facts-line" },
-      h("div", {}, h("b", {}, S.trials.length ? String(S.trials.length) : "…"), h("span", { class: "muted small" }, "recruiting treatment trials")),
-      h("div", {}, h("b", {}, S.countries ? String(S.countries) : "…"), h("span", { class: "muted small" }, "countries with open sites")),
-      h("div", {}, h("b", {}, S.db ? String(S.patients.length) : "–"), h("span", { class: "muted small" }, "patients saved")),
-      h("div", {}, h("b", {}, S.db ? String(open.length) : "–"), h("span", { class: "muted small" }, "boards waiting for opinions"))),
-    h("h2", {}, "What Eligo does"),
-    h("div", { class: "grid-3" },
-      pillar("match", "Trial matcher", "Paste a summary in Spanish, Portuguese, English or any language. Claude checks every trial's eligibility criteria and ranks the closest options.", "#match", "Match a patient"),
-      pillar("patients", "Patient profiles", "Save each case with its matched trials, the family explanation, questions for the oncologist and an enrollment checklist.", "#patients", "See patients"),
-      pillar("boards", "Remote tumor boards", "A treating doctor posts a hard case. Specialists add written second opinions, and Claude summarizes where they agree and differ.", "#boards", "See tumor boards")),
-    h("h2", {}, "How a case moves"),
-    h("div", { class: "card flow" },
-      h("div", {}, h("h3", {}, "Paste the case"), h("p", { class: "muted small" }, "Any language. De-identified: initials, no ID numbers.")),
-      h("div", {}, h("h3", {}, "Get matched trials"), h("p", { class: "muted small" }, "Ranked by fit, then by how close the sites are.")),
-      h("div", {}, h("h3", {}, "Ask the board"), h("p", { class: "muted small" }, "Specialists weigh in on treatment and on the trials.")),
-      h("div", {}, h("h3", {}, "Enroll"), h("p", { class: "muted small" }, "The family gets a checklist for costs, travel and follow-up."))),
-    h("p", { class: "notice" }, h("strong", {}, "Prototype. "), "Use fictional or de-identified cases only. Eligo supports doctors; it does not give medical advice, and the treating oncologist decides. ",
-      h("span", { class: "muted" }, S.snapshotDate ? `Trial data: ClinicalTrials.gov snapshot ${S.snapshotDate}.` : "")));
-}
-function pillar(k, title, text, href, cta) {
-  return h("div", { class: "card pillar" }, h("div", { class: "ic", html: icon(k) }), h("h3", {}, title), h("p", { class: "muted small" }, text),
-    h("a", { class: "btn ghost", href, style: "align-self:flex-start;padding-left:0" }, cta + " →"));
-}
+  const recent = S.patients.slice(0, 6);
+  const newMatch = h("a", { class: "btn primary", href: "#match", onclick: () => { S.match.forPatient = null; } }, ic("plus"), "New match");
+  const patientsBlock = loadingOr("patients", () => recent.length
+    ? h("div", { class: "card tablewrap", style: "padding:0" }, h("table", {},
+        h("thead", {}, h("tr", {}, ...["Patient", "Diagnosis", "Country", "Trials", "Updated"].map((x) => h("th", {}, x)))),
+        h("tbody", {}, ...recent.map((p) => {
+          const c = p.case || {}, likely = (p.matches || []).filter((m) => m.fit === "likely").length;
+          return h("tr", { class: "rowlink", tabindex: "0", onclick: () => go(`patient-${p.id}`), onkeydown: (e) => { if (e.key === "Enter") go(`patient-${p.id}`); } },
+            h("td", { class: "mono" }, p.alias || "–"), h("td", {}, [c.cancer_type, c.stage && `stage ${c.stage}`].filter(Boolean).join(", ") || "–"),
+            h("td", {}, c.country || "–"), h("td", {}, `${(p.matches || []).length}${likely ? ` (${likely} likely)` : ""}`), h("td", { class: "muted" }, ago(p.updated_at)));
+        }))))
+    : h("div", { class: "card empty" }, h("p", {}, "No patients yet. Run a match and save it to start a patient record."), newMatch.cloneNode(true)));
+  const boardsBlock = loadingOr("boards", () => open.length
+    ? h("div", { class: "stack" }, ...open.slice(0, 5).map(boardRow))
+    : h("div", { class: "card empty" }, h("p", {}, "No cases are waiting for opinions. Post one from a patient record.")));
 
+  return h("div", { class: "view" },
+    head("Overview", "Clinical trial matching and remote tumor boards for cancer patients in Latin America.", newMatch),
+    h("div", { class: "source" },
+      h("span", {}, "Trial index: ", h("b", {}, S.trials.length ? String(S.trials.length) : "…"), " recruiting treatment trials"),
+      h("span", {}, h("b", {}, S.countries ? String(S.countries) : "…"), " countries with open sites"),
+      h("span", {}, "Source: ClinicalTrials.gov", S.snapshotDate ? `, retrieved ${S.snapshotDate}` : "")),
+    h("div", { class: "split" },
+      h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, "Recent patients"), h("a", { href: "#patients", class: "small" }, "All patients")), patientsBlock),
+      h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, `Open tumor boards${S.db ? ` (${open.length})` : ""}`), h("a", { href: "#boards", class: "small" }, "All boards")), boardsBlock)),
+    h("div", { class: "scope" },
+      h("section", { class: "card stack" }, h("h3", {}, "How a case moves through Eligo"),
+        h("ol", { class: "steps-list small" },
+          h("li", {}, "Paste a de-identified case summary, in any language."),
+          h("li", {}, "Eligo shortlists recruiting trials and checks each against its eligibility criteria."),
+          h("li", {}, "Results are ranked by fit, then by how close the recruiting sites are."),
+          h("li", {}, "The family receives an explanation and checklist in their language."),
+          h("li", {}, "Hard cases go to a tumor board for written specialist opinions."))),
+      h("section", { class: "card stack" }, h("h3", {}, "What Eligo does and does not do"),
+        h("ul", { class: "list small" },
+          h("li", {}, "Supports the treating oncologist; it does not make treatment decisions."),
+          h("li", {}, "Every match must be confirmed by the oncologist and the trial site."),
+          h("li", {}, "Fit labels come from the trial's published criteria and the facts in the summary only."),
+          h("li", {}, "Use initials or a code. Never enter names, ID numbers or contact details.")))));
+}
 function viewMatch() {
   const M = S.match;
   const patient = M.forPatient ? S.patients.find((p) => p.id === M.forPatient) : null;
@@ -727,7 +704,7 @@ function viewBoard(r) {
     // Case brief (Claude) + question
     left.append(h("div", { class: "card stack" }, h("div", { class: "label" }, "Question from the treating doctor"), h("p", { style: "font-size:1.05rem;white-space:pre-wrap" }, b.question),
       b.specialties?.length ? h("div", { class: "row" }, ...b.specialties.map((s) => h("span", { class: "chip" }, s))) : null));
-    if (b.brief) left.append(h("div", { class: "card brief stack" }, h("div", { class: "row" }, h("span", { html: icon("spark"), style: "display:inline-flex;width:18px;color:var(--accent)" }), h("h3", {}, "Case brief")),
+    if (b.brief) left.append(h("div", { class: "card brief stack" }, h("h3", {}, "Case brief"),
       b.brief.one_liner ? h("p", {}, b.brief.one_liner) : null,
       h("div", { class: "grid-2" }, h("div", {}, h("div", { class: "label" }, "Key facts"), list(b.brief.key_facts)), h("div", {}, h("div", { class: "label" }, "Treatment so far"), list(b.brief.treatment_history))),
       h("div", {}, h("div", { class: "label" }, "For the board to weigh"), list(b.brief.open_questions)),
@@ -807,6 +784,7 @@ function viewSettings() {
   const wrap = h("div", { class: "view" }, head("Settings", "This copy of Eligo runs on its own, outside Claude."));
   if (!S.standalone) { wrap.append(h("div", { class: "card" }, h("p", {}, "Inside Claude, Eligo uses your Claude account and a workspace shared with the people you invite. Nothing to set up."))); return wrap; }
   const P = window.EligoStandalone;
+  if (!P) { wrap.append(h("p", { class: "error" }, "Couldn't load Eligo's Claude connection. Reload the page; if it keeps happening, download Eligo.html again.")); return wrap; }
   const has = !!P.getKey();
   const input = h("input", { type: "password", id: "api-key", placeholder: has ? "A key is saved. Paste a new one to replace it." : "sk-ant-…", autocomplete: "off", spellcheck: "false" });
   const msg = h("p", { class: "small" });
@@ -832,7 +810,8 @@ renderShell(); renderView();
 
 (async () => {
   try {
-    const data = await (await fetch("trials.json")).json();
+    // The single-file build (Eligo.html) carries the snapshot inline; the website and Claude versions fetch it.
+    const data = window.ELIGO_TRIALS || await (await fetch("trials.json")).json();
     S.trials = data.trials; S.byId = new Map(S.trials.map((t) => [t.id, t])); S.snapshotDate = data.generated_at;
     S.countries = new Set(S.trials.flatMap((t) => t.sites.map((s) => s[2]))).size;
   } catch { S.snapshotDate = ""; }
@@ -863,7 +842,7 @@ renderShell(); renderView();
 /* Outside Claude (GitHub Pages, a local file server): your own API key, data in this browser. */
 async function bootStandalone() {
   S.standalone = true;
-  await new Promise((resolve) => {
+  if (!window.EligoStandalone) await new Promise((resolve) => {
     const s = document.createElement("script");
     s.src = "standalone.js"; s.onload = resolve; s.onerror = resolve;
     document.head.append(s);

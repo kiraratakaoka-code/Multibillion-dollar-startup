@@ -3,6 +3,7 @@
  *   docs/index.html    the Eligo app (web/trial-matcher.html in a full HTML document)
  *   docs/trials.json   the ClinicalTrials.gov snapshot
  *   docs/standalone.js the browser bundle: Anthropic SDK + local storage (web/standalone.ts)
+ *   Eligo.html         all of the above in one file: download it and open it in a browser
  *
  *   bun run build:site
  */
@@ -36,5 +37,17 @@ if (!out.success) {
   for (const log of out.logs) console.error(log);
   process.exit(1);
 }
-await Bun.write(new URL("docs/standalone.js", root), out.outputs[0]!);
-console.log("Built docs/index.html, docs/trials.json, docs/standalone.js");
+const bundle = await out.outputs[0]!.text();
+await Bun.write(new URL("docs/standalone.js", root), bundle);
+
+// Eligo.html: one self-contained file (app + trial snapshot + SDK) you can download and double-click.
+// Only "</script" can close an inline <script> early; escape exactly that, leaving the rest of the code untouched.
+const inline = (js: string) => js.replace(/<\/(script)/gi, "<\\/$1");
+const trialsJson = (await Bun.file(new URL("web/trials.json", root)).text()).replaceAll("<", "\\u003c");
+// A function replacement, so "$&", "$'" and similar inside the code are inserted literally.
+const single = html.replace(
+  "<body>\n",
+  () => `<body>\n<script>window.ELIGO_TRIALS = ${trialsJson};</script>\n<script>${inline(bundle)}</script>\n`,
+);
+await Bun.write(new URL("Eligo.html", root), single);
+console.log("Built docs/index.html, docs/trials.json, docs/standalone.js and Eligo.html");
