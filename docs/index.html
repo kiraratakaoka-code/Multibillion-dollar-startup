@@ -174,6 +174,43 @@
   .tick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
   #enr-photo { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
+  .near { display: flex; flex-direction: column; }
+  .near-row { display: flex; flex-direction: column; gap: 2px; padding: 9px 0; border-top: 1px solid var(--line); text-decoration: none; color: inherit; }
+  .near-row:first-child, .near .notice + .near-row { border-top: 0; padding-top: 0; }
+  .near .notice { margin-bottom: 10px; }
+  .near-row:hover .near-title { text-decoration: underline; }
+  .near-title { font-weight: 500; color: var(--link); }
+  .faq { border-top: 1px solid var(--line); padding-top: 8px; }
+  .faq summary { color: var(--fg); font-weight: 500; }
+  .todo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .todo li { display: flex; gap: 10px; align-items: center; }
+  .todo-box { width: 18px; height: 18px; flex: none; border: 1px solid var(--line-strong); border-radius: 3px; display: grid; place-items: center; font-size: .72rem; color: var(--surface); }
+  .todo li[data-done="true"] .todo-box { background: var(--likely); border-color: var(--likely); }
+  .todo li[data-done="true"] > span:last-child { color: var(--muted); text-decoration: line-through; }
+
+  .status { display: flex; flex-direction: column; gap: 8px; padding: 20px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); }
+  .status h2 { font-size: 1.2rem; }
+  .status-trial { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); text-decoration: none; color: inherit; }
+  .status-trial:hover .small { text-decoration: underline; }
+  .stepbar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+  .stepbar span { height: 6px; border-radius: 1px; background: var(--surface-2); border: 1px solid var(--line); }
+  .stepbar span[data-done="true"] { background: var(--likely); border-color: var(--likely); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+  .tile { display: flex; flex-direction: column; gap: 4px; padding: 14px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); text-decoration: none; color: var(--fg); }
+  .tile:hover { border-color: var(--accent); }
+  .tile-ic { width: 30px; height: 30px; border-radius: 4px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; margin-bottom: 4px; }
+  .tile-ic svg { width: 17px; height: 17px; }
+  .work { display: flex; flex-direction: column; }
+  .work-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 9px 0; border-top: 1px solid var(--line); text-decoration: none; color: inherit; }
+  .work-row:first-child { border-top: 0; padding-top: 2px; }
+  .work-row:hover .work-text { text-decoration: underline; }
+  .work-tag { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .work-tag[data-tag="Referral"], .work-tag[data-tag="Opinion"] { color: var(--accent); }
+  .work-tag[data-tag="Follow-up"] { color: var(--possible); }
+  .work-text { font-weight: 500; color: var(--link); }
+  .work-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .quick { display: flex; flex-wrap: wrap; gap: 8px; }
+
   /* Trials */
   .trial { display: flex; flex-direction: column; gap: 8px; }
   .trial .t-title { font-weight: 600; }
@@ -838,79 +875,220 @@ function openDirectory(filters) { Object.assign(S.dir, { q: "", country: "", lim
 
 function viewHome() { return isPatient() ? homePatient() : homeClinical(); }
 
+/* ---------- clinician home: the work ---------- */
+function workItems(P) {
+  const me = S.me?.id, items = [];
+  const alias = (pid) => S.patients.find((p) => p.id === pid)?.alias || "A patient";
+  for (const e of S.enrollments) {
+    const href = `#enroll-${e.patient_id}-${e.trial_id}`, n = checkCounts(e), who = alias(e.patient_id);
+    if (e.steps?.enrolled) continue;
+    if (!e.check) items.push({ p: 1, tag: "Enrollment", text: `${who}: check requirements for ${e.trial_id}`, href });
+    else if (n.unknown) items.push({ p: 1, tag: "Enrollment", text: `${who}: ${n.unknown} requirement${n.unknown === 1 ? "" : "s"} need information`, sub: e.trial_id, href });
+    else if (e.letter && !e.steps?.contacted) items.push({ p: 0, tag: "Referral", text: `${who}: referral drafted but not sent`, sub: e.trial_id, href });
+    else if (!e.steps?.contacted) items.push({ p: 2, tag: "Referral", text: `${who}: ready to contact the study team`, sub: e.trial_id, href });
+    else if (!e.steps?.screening) {
+      const days = (Date.now() - Date.parse(e.steps.contacted)) / 864e5;
+      items.push({ p: days > 7 ? 1 : 4, tag: "Follow-up", text: `${who}: ${days > 7 ? "no screening date yet, follow up with the site" : "waiting on the study team"}`, sub: `${e.trial_id} · contacted ${ago(e.steps.contacted)}`, href });
+    }
+  }
+  for (const b of S.boards.filter((x) => x.status === "open")) {
+    const ops = S.opinions.filter((o) => o.board_id === b.id);
+    if (b.created_by === me) {
+      if (ops.length && (!b.consensus || b.consensus.opinion_count !== ops.length)) items.push({ p: 1, tag: "Your case", text: `${b.patient_alias}: ${ops.length} opinion${ops.length === 1 ? "" : "s"} to review`, href: `#board-${b.id}` });
+    } else if (!ops.some((o) => o.author === me)) {
+      const mine = P.specialty && b.specialties?.includes(P.specialty);
+      items.push({ p: mine ? 0 : 3, tag: "Opinion", text: `${mine ? `${P.specialty} opinion requested` : "Opinion requested"}: ${b.patient_alias}`, sub: b.question.slice(0, 90), href: `#board-${b.id}` });
+    }
+  }
+  for (const p of S.patients) {
+    if (p.matched_at && (Date.now() - Date.parse(p.matched_at)) / 864e5 > 30) items.push({ p: 5, tag: "Re-match", text: `${p.alias}: matched ${ago(p.matched_at)}, new trials may be open`, href: `#patient-${p.id}` });
+  }
+  return items.sort((x, y) => x.p - y.p);
+}
+function gettingStarted() {
+  const me = S.me?.id;
+  const done = { profile: true, match: S.patients.length > 0, enroll: S.enrollments.length > 0, board: S.boards.length > 0, opinion: S.opinions.some((o) => o.author === me) };
+  const tasks = [["profile", "Set up your profile", "#profile"], ["match", "Match a first patient and save the record", "#match"], ["enroll", "Start an enrollment from a matched trial", "#patients"],
+    ["board", "Post a hard case to a tumor board", "#patients"], ["opinion", "Give an opinion on a colleague's case", "#boards"]];
+  return h("ul", { class: "todo" }, ...tasks.map(([k, label, href]) => h("li", { "data-done": String(!!done[k]) }, h("span", { class: "todo-box" }, done[k] ? "✓" : ""), done[k] ? h("span", {}, label) : h("a", { href }, label))));
+}
 function homeClinical() {
   const P = S.profile;
   const open = S.boards.filter((b) => b.status === "open")
     .sort((a, b) => Number(b.specialties?.includes(P.specialty)) - Number(a.specialties?.includes(P.specialty)));
-  const recent = S.patients.slice(0, 6);
-  const newMatch = h("a", { class: "btn primary", href: "#match", onclick: () => { S.match.forPatient = null; } }, ic("plus"), "New match");
-  const patientsBlock = loadingOr("patients", () => recent.length
-    ? h("div", { class: "card tablewrap", style: "padding:0" }, h("table", {},
-        h("thead", {}, h("tr", {}, ...["Patient", "Diagnosis", "Country", "Trials", "Updated"].map((x) => h("th", {}, x)))),
-        h("tbody", {}, ...recent.map((p) => {
-          const c = p.case || {}, likely = (p.matches || []).filter((m) => m.fit === "likely").length;
-          return h("tr", { class: "rowlink", tabindex: "0", onclick: () => go(`patient-${p.id}`), onkeydown: (e) => { if (e.key === "Enter") go(`patient-${p.id}`); } },
-            h("td", { class: "mono" }, p.alias || "–"), h("td", {}, [c.cancer_type, c.stage && `stage ${c.stage}`].filter(Boolean).join(", ") || "–"),
-            h("td", {}, c.country || "–"), h("td", {}, `${(p.matches || []).length}${likely ? ` (${likely} likely)` : ""}`), h("td", { class: "muted" }, ago(p.updated_at)));
-        }))))
-    : h("div", { class: "card empty" }, h("p", {}, "No patients yet. Run a match and save it to start a patient record."), newMatch.cloneNode(true)));
-  const boardsBlock = loadingOr("boards", () => open.length
-    ? h("div", { class: "stack" }, ...open.slice(0, 4).map(boardRow))
-    : h("div", { class: "card empty" }, h("p", {}, "No cases are waiting for opinions. Post one from a patient record.")));
+  const recent = S.patients.slice(0, 5);
+  const active = S.enrollments.filter((e) => !e.steps?.enrolled);
+  const work = workItems(P);
   const sub = [P.title, P.institution, P.country].filter(Boolean).join(" · ");
 
+  const workCard = h("section", { class: "card stack" },
+    h("div", { class: "section-title" }, h("h2", {}, "Your work"), work.length ? h("span", { class: "small muted" }, `${work.length} item${work.length === 1 ? "" : "s"}`) : null),
+    !S.db ? h("p", { class: "muted small" }, "Your tasks appear here when Eligo is opened in Claude or with saved data.")
+      : work.length ? h("div", { class: "work" }, ...work.slice(0, 8).map((w) => h("a", { class: "work-row", href: w.href },
+          h("span", { class: "work-tag", "data-tag": w.tag }, w.tag), h("span", { class: "stack", style: "gap:1px;min-width:0" }, h("span", { class: "work-text" }, w.text), w.sub ? h("span", { class: "small muted work-sub" }, w.sub) : null))))
+      : S.patients.length ? h("p", { class: "muted" }, "You're all caught up.")
+      : h("div", { class: "stack" }, h("p", { class: "small muted" }, "Nothing to do yet. Start here:"), gettingStarted()));
+
+  const pipeline = [["Matched", S.patients.length], ...STEPS.slice(1).map(([k, label]) => [label.replace("Requirements checked", "Requirements checked").replace("Oncologist agrees it's a good option", "Oncologist agrees"), S.enrollments.filter((e) => e.steps?.[k]).length])];
+  const pipeCard = h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "Enrollment pipeline"), h("span", { class: "small muted" }, "Your workspace")),
+    S.patients.length ? bars(pipeline) : h("p", { class: "small muted" }, "Once you match and enroll patients, you'll see how many are at each step here."));
+  const quick = h("section", { class: "card stack" }, h("h3", {}, "Quick actions"),
+    h("div", { class: "quick" },
+      h("a", { class: "btn", href: "#match", onclick: () => { S.match.forPatient = null; } }, ic("match"), "New match"),
+      h("a", { class: "btn", href: "#patients" }, ic("boards"), "Ask a tumor board"),
+      h("a", { class: "btn", href: "#trials" }, ic("trials"), "Search trials"),
+      h("a", { class: "btn", href: "#patients" }, ic("patients"), "Patients")),
+    !S.standalone ? h("p", { class: "small muted" }, "Invite colleagues from the Share menu at the top of this page.") : null);
+
+  const patientsBlock = loadingOr("patients", () => recent.length
+    ? h("div", { class: "card tablewrap", style: "padding:0" }, h("table", {},
+        h("thead", {}, h("tr", {}, ...["Patient", "Diagnosis", "Trials", "Enrollment", "Updated"].map((x) => h("th", {}, x)))),
+        h("tbody", {}, ...recent.map((p) => {
+          const c = p.case || {}, es = S.enrollments.filter((e) => e.patient_id === p.id);
+          return h("tr", { class: "rowlink", tabindex: "0", onclick: () => go(`patient-${p.id}`), onkeydown: (e) => { if (e.key === "Enter") go(`patient-${p.id}`); } },
+            h("td", { class: "mono" }, p.alias || "–"), h("td", {}, [c.cancer_type, c.stage && `stage ${c.stage}`].filter(Boolean).join(", ") || "–"),
+            h("td", {}, String((p.matches || []).length)), h("td", {}, es.length ? stepLabel(es[0]) : h("span", { class: "muted" }, "Not started")), h("td", { class: "muted" }, ago(p.updated_at)));
+        }))))
+    : h("div", { class: "card empty" }, h("p", {}, "No patients yet. Run a match and save it to start a patient record.")));
+  const boardsBlock = loadingOr("boards", () => open.length
+    ? h("div", { class: "stack" }, ...open.slice(0, 3).map(boardRow))
+    : h("div", { class: "card empty" }, h("p", {}, "No cases are waiting for opinions.")));
+
   return h("div", { class: "view" },
-    head(`${greeting()}${P.name ? `, ${P.name}` : ""}`, sub || "Clinical trial matching and remote tumor boards.", newMatch),
+    head(`${greeting()}${P.name ? `, ${P.name}` : ""}`, sub || "Clinical trial matching, enrollment and remote tumor boards.",
+      h("a", { class: "btn primary", href: "#match", onclick: () => { S.match.forPatient = null; } }, ic("plus"), "New match")),
     h("div", { class: "kpis" },
-      kpi(S.trials.length || "…", "recruiting treatment trials", "#trials"),
-      kpi(S.countries || "…", "countries with open sites", "#trials"),
-      kpi(S.db ? S.patients.length : "–", "patients in your workspace", "#patients"),
-      kpi(S.db ? open.length : "–", "boards waiting for opinions", "#boards")),
+      kpi(S.db ? S.patients.length : "–", "patients", "#patients"),
+      kpi(S.db ? active.length : "–", "enrollments in progress", "#patients"),
+      kpi(S.db ? S.enrollments.filter((e) => e.steps?.contacted).length : "–", "referrals sent", "#patients"),
+      kpi(S.db ? S.enrollments.filter((e) => e.steps?.enrolled).length : "–", "patients enrolled", "#patients"),
+      kpi(S.db ? open.length : "–", "boards open", "#boards")),
+    // Left: what needs doing and who it's for. Right: shortcuts, the pipeline and the boards.
     h("div", { class: "split" },
-      h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, "Recent patients"), h("a", { href: "#patients", class: "small" }, "All patients")), patientsBlock),
-      h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, "Boards waiting for opinions"), h("a", { href: "#boards", class: "small" }, "All boards")),
-        P.specialty && open.some((b) => b.specialties?.includes(P.specialty)) ? h("p", { class: "small muted" }, `Cases asking for ${P.specialty} are listed first.`) : null, boardsBlock)),
-    h("div", { class: "grid-2" },
-      h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "Recruiting trials by country"), h("span", { class: "small muted" }, "Latin America")),
-        S.trials.length ? bars(countryRows(), (c) => openDirectory({ country: c })) : h("p", { class: "muted" }, "Loading…")),
-      h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "Recruiting trials by cancer type"), h("span", { class: "small muted" }, "Select to browse")),
-        S.trials.length ? bars(cancerRows(), (c) => openDirectory({ q: c.split(" ")[0].toLowerCase() })) : h("p", { class: "muted" }, "Loading…"))),
-    h("p", { class: "small muted" }, `Trial data: ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}. Eligo supports the treating oncologist; every match must be confirmed by the oncologist and the trial site.`));
+      h("div", { class: "stack", style: "gap:18px" }, workCard,
+        h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, "Recent patients"), h("a", { href: "#patients", class: "small" }, "All patients")), patientsBlock)),
+      h("div", { class: "stack", style: "gap:18px" }, quick, pipeCard,
+        h("section", { class: "stack" }, h("div", { class: "section-title" }, h("h2", {}, "Tumor boards"), h("a", { href: "#boards", class: "small" }, "All boards")), boardsBlock))),
+    h("div", { class: "grid-2", style: "align-items:start" },
+      h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, P.country ? `Recruiting now in ${P.country}` : "Recruiting now"),
+          h("a", { class: "small", href: "#trials", onclick: (e) => { e.preventDefault(); openDirectory({ country: P.country || "" }); } }, "All")),
+        S.trials.length ? nearList(trialsNear(P.country, ""), P.country) : h("p", { class: "muted" }, "Loading…")),
+      h("div", { class: "stack", style: "gap:18px" },
+        h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "Recruiting trials by country"), h("span", { class: "small muted" }, "Latin America")),
+          S.trials.length ? bars(countryRows(6), (c) => openDirectory({ country: c })) : h("p", { class: "muted" }, "Loading…")),
+        h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, "By cancer type"), h("span", { class: "small muted" }, "Select to browse")),
+          S.trials.length ? bars(cancerRows(6), (c) => openDirectory({ q: c.split(" ")[0].toLowerCase() })) : h("p", { class: "muted" }, "Loading…")))),
+    h("p", { class: "small muted" }, `Trial data: ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}. Every match must be confirmed by the treating oncologist and the trial site.`));
 }
 function kpi(n, label, href) {
   return h("a", { class: "kpi", href }, h("b", {}, String(n)), h("span", {}, label));
 }
+/* Trials with an open site in a country: those matching the cancer type first, then those with most sites there. */
+/* When the country itself has no open site, fall back to the rest of its region (e.g. Paraguay -> Argentina, Brazil). */
+function trialsNear(country, cancerText, n = 5) {
+  if (!country) return { rows: [], scope: "none" };
+  const group = cancerText ? CANCER_GROUPS.find(([, re]) => re.test(cancerText.toLowerCase())) : null;
+  const region = regionOf(country);
+  const inScope = (x) => x[2] === country;
+  const inRegion = (x) => region && regionOf(x[2]) === region;
+  const local = S.trials.some((t) => t.sites.some(inScope));
+  const keep = local ? inScope : inRegion;
+  const rows = S.trials.filter((t) => t.sites.some(keep)).map((t) => ({ t,
+      fits: group ? group[1].test((t.title + " " + t.conditions.join(" ")).toLowerCase()) : false,
+      here: t.sites.filter(keep) }))
+    .sort((a, b) => Number(b.fits) - Number(a.fits) || b.here.length - a.here.length).slice(0, n);
+  return { rows, scope: local ? "country" : rows.length ? "region" : "none" };
+}
+function nearList({ rows, scope }, country) {
+  if (!rows.length) return h("p", { class: "small muted" }, country ? `No trial in the index has an open site in or near ${country} yet.` : "Add your country in your profile to see trials near you.");
+  const note = scope === "region" ? h("p", { class: "small notice" }, `No trial has an open site in ${country} right now. These are the closest, in neighboring countries.`) : null;
+  return h("div", { class: "near" }, note, ...rows.map(({ t, here }) => {
+    const cities = scope === "region"
+      ? [[...new Set(here.map((x) => x[2]))].join(", ") + ` · ${here.length} site${here.length === 1 ? "" : "s"}`]
+      : [...new Set(here.map((x) => x[1]).filter(Boolean))];
+    return h("a", { class: "near-row", href: "#trials", onclick: (e) => { e.preventDefault(); openDirectory({ country, q: t.id.toLowerCase() }); } },
+      h("span", { class: "near-title" }, t.title),
+      h("span", { class: "small muted" }, [t.phases.map((p) => p.replace("PHASE", "Phase ")).join(", "), cities.slice(0, 3).join(", ") + (cities.length > 3 ? ` +${cities.length - 3}` : "")].filter(Boolean).join(" · ")));
+  }));
+}
+const FAQ = [
+  ["What is a clinical trial?", "A research study that tests a new treatment, or a new way of using an existing one, in people. Cancer trials are how every current treatment was proven."],
+  ["Does it cost money?", "The treatment being studied and the study's tests are usually free. Ask the study team who pays for travel, lodging and routine care; many sponsors reimburse travel."],
+  ["Is it safe?", "Every trial is reviewed by an ethics committee and the team watches each participant closely. There can be side effects; the team must explain the known risks before you agree."],
+  ["Will I get a placebo?", "In cancer trials a placebo alone is rarely given when a proven treatment exists. Usually everyone receives standard treatment, and some also receive the new one."],
+  ["Can I leave the trial?", "Yes. You can leave at any time, for any reason, and you keep your right to the standard care your doctor offers."],
+];
+function faq() {
+  return h("section", { class: "card stack" }, h("h3", {}, "Questions families ask"),
+    ...FAQ.map(([q, a]) => h("details", { class: "faq" }, h("summary", {}, q), h("p", { class: "small" }, a))));
+}
 
-function homePatient() {
-  const P = S.profile, M = S.myMatch;
-  const inCountry = P.country ? S.trials.filter((t) => sitesIn(t, P.country)).length : 0;
-  const blocks = [];
-  if (M?.matches?.length) {
-    const likely = M.matches.filter((m) => m.fit === "likely").length, possible = M.matches.filter((m) => m.fit === "possible").length;
-    blocks.push(h("section", { class: "card stack" },
-      h("div", { class: "section-title" }, h("h2", {}, "Your trial matches"), h("a", { href: "#mytrials", class: "small" }, "See all details")),
-      h("p", { class: "muted small" }, `Checked ${ago(M.matched_at)}: ${likely} likely and ${possible} possible match${possible === 1 ? "" : "es"} out of ${M.matches.length}. Your oncologist must confirm each one.`),
-      ...M.matches.slice(0, 3).map((m) => { const t = S.byId.get(m.id); return h("div", { class: "stack", style: "gap:2px;padding-top:8px;border-top:1px solid var(--line)" },
-        h("div", { class: "row" }, h("span", { class: "pill", "data-tone": m.fit }, m.fit), h("span", { class: "chip" }, PROX_LABEL[m.proximity]?.replace("patient's", "your") || "")),
-        h("span", { style: "font-weight:500" }, t?.title || m.id), m.plain_summary ? h("span", { class: "small muted" }, m.plain_summary) : null); })));
-    const mine = Object.values(S.myEnroll);
-    if (mine.length) blocks.unshift(h("section", { class: "card stack" }, h("h2", {}, "Your enrollments"), enrollmentList("me", mine)));
-    if (M.checklist?.length) blocks.push(h("section", { class: "card stack" }, h("h2", {}, "Your next steps"), list(M.checklist.slice(0, 5))));
-  } else {
-    blocks.push(h("section", { class: "card stack" }, h("h2", {}, "Find trials for your diagnosis"),
-      h("p", {}, "Describe the diagnosis in your own words, or paste what your doctor wrote, in any language. Eligo checks every recruiting trial in our index and explains the options to you in ", P.language || "your language", "."),
-      h("a", { class: "btn primary", href: "#mytrials", style: "align-self:flex-start" }, "Start")));
+/* ---------- patient home: support and status ---------- */
+function patientStatus(M, enrolls) {
+  if (!M) return { title: "Let's find trials for you", text: "Tell Eligo about the diagnosis in your own words, or paste what your doctor wrote. It takes a few minutes.", action: ["Describe the diagnosis", "#mytrials"] };
+  const active = enrolls.filter((e) => !e.steps?.enrolled).sort((a, b) => Object.values(b.steps || {}).filter(Boolean).length - Object.values(a.steps || {}).filter(Boolean).length);
+  if (enrolls.some((e) => e.steps?.enrolled) && !active.length) return { title: "You're enrolled", text: "Keep your documents together and write down questions for each visit. Your study team is your main contact now.", action: ["See your enrollment", `#enroll-me-${enrolls.find((e) => e.steps?.enrolled).trial_id}`] };
+  if (!active.length) {
+    const best = (M.matches || []).find((m) => m.fit !== "unlikely");
+    if (!best) return { title: "No trial fits right now", text: "New trials open every week. Add more detail about the diagnosis, or check again soon.", action: ["Add more detail", "#mytrials"] };
+    const n = M.matches.filter((m) => m.fit !== "unlikely").length;
+    return { title: `${n} trial${n === 1 ? "" : "s"} could be worth asking about`, text: "Next, check whether you meet the requirements of the best one. Eligo goes through them one by one and tells you what's missing.", action: ["Check the requirements", `#enroll-me-${best.id}`] };
   }
+  const e = active[0], n = checkCounts(e), href = `#enroll-me-${e.trial_id}`;
+  const docsLeft = DOCS.filter(([k]) => !e.docs?.[k]).length;
+  if (!e.check) return { title: "Next: check the requirements", text: "Eligo will go through this trial's requirements one by one.", action: ["Check now", href], e };
+  if (n.unknown) return { title: `Next: answer ${n.unknown} question${n.unknown === 1 ? "" : "s"}`, text: "Some requirements need information. Answer what you know, or add a photo of a report.", action: ["Answer now", href], e };
+  if (!e.steps?.records) return { title: "Next: gather your records", text: `${docsLeft} document${docsLeft === 1 ? "" : "s"} left on your list. Your hospital can give you copies.`, action: ["See the list", href], e };
+  if (!e.steps?.doctor) return { title: "Next: talk to your oncologist", text: "Show them this trial and the questions Eligo prepared. Ask whether it's a good option for you.", action: ["See the questions", href], e };
+  if (!e.steps?.contacted) return { title: e.letter ? "Next: send the message to the study team" : "Next: prepare the message to the study team", text: "Eligo writes it for you, without your name or ID number. Show it to your oncologist first.", action: [e.letter ? "Open the message" : "Prepare it", href], e };
+  if (!e.steps?.screening) return { title: "Waiting to hear from the study team", text: "This can take a few days. If you don't hear back within a week, call the study contact.", action: ["See the contact", href], e };
+  return { title: "Your screening visit is scheduled", text: "Bring your documents and your questions. The study team decides after its own checks.", action: ["Prepare for the visit", href], e };
+}
+function stepBar(e) {
+  return h("div", { class: "stepbar", role: "img", "aria-label": `${STEPS.filter(([k]) => e.steps?.[k]).length} of ${STEPS.length} steps done` },
+    ...STEPS.map(([k]) => h("span", { "data-done": String(!!e.steps?.[k]) })));
+}
+function homePatient() {
+  const P = S.profile, M = S.myMatch, enrolls = Object.values(S.myEnroll);
+  const st = patientStatus(M, enrolls);
+  const firstEnroll = st.e || enrolls[0];
+  const enrollHref = firstEnroll ? `#enroll-me-${firstEnroll.trial_id}` : M?.matches?.length ? `#enroll-me-${M.matches[0].id}` : "#mytrials";
+
+  const status = h("section", { class: "status" },
+    h("span", { class: "label" }, "Your status"),
+    h("h2", {}, st.title), h("p", {}, st.text),
+    h("a", { class: "btn primary", href: st.action[1], style: "align-self:flex-start" }, st.action[0]),
+    enrolls.length ? h("div", { class: "stack", style: "gap:10px;margin-top:6px" }, ...enrolls.map((e) => { const t = S.byId.get(e.trial_id);
+      return h("a", { class: "status-trial", href: `#enroll-me-${e.trial_id}` }, h("span", { class: "row", style: "justify-content:space-between" }, h("span", { class: "small", style: "font-weight:500" }, (t?.title || e.trial_id).slice(0, 90) + ((t?.title || "").length > 90 ? "…" : "")), h("span", { class: "small muted" }, stepLabel(e))), stepBar(e)); }))
+      : M?.matches?.length ? h("p", { class: "small muted" }, `Your matches: ${M.matches.filter((m) => m.fit === "likely").length} likely, ${M.matches.filter((m) => m.fit === "possible").length} possible. `, h("a", { href: "#mytrials" }, "See them")) : null);
+
+  const tile = (icn, title, text, href) => h("a", { class: "tile", href }, h("span", { class: "tile-ic", html: icon(icn) }), h("b", {}, title), h("span", { class: "small muted" }, text));
+  const tiles = h("section", { class: "stack" }, h("h2", {}, "What you can do here"),
+    h("div", { class: "tiles" },
+      tile("mytrials", "Find trials for me", "Describe the diagnosis and see what could fit.", "#mytrials"),
+      tile("match", "Check if I qualify", "Go through a trial's requirements one by one.", enrollHref),
+      tile("doc", "Add a medical report", "Take a photo; Eligo reads the important facts.", firstEnroll ? `#enroll-me-${firstEnroll.trial_id}` : "#mytrials"),
+      tile("chat", "Prepare for my doctor", "Questions to bring, written in your language.", "#mytrials"),
+      tile("trials", "Browse all trials", "Search by cancer type and country.", "#trials")));
+
+  const talk = h("section", { class: "card stack" }, h("h3", {}, "Talking to your doctor about trials"),
+    h("ul", { class: "list small" },
+      h("li", {}, "Doctors expect questions about trials. It's normal to ask."),
+      h("li", {}, "Bring the trial number. It starts with NCT and appears on each trial."),
+      h("li", {}, "Ask: could this trial fit me, and how would it change my treatment?"),
+      h("li", {}, "Ask who can send your records to the study team."),
+      h("li", {}, "Ask the hospital's social worker about help with travel and lodging.")));
+
   return h("div", { class: "view" },
-    head(`${greeting()}${P.name ? `, ${P.name}` : ""}`, P.relation === "caregiver" ? "Finding clinical trials for someone you care for." : "Finding clinical trials for your cancer."),
+    head(`${greeting()}${P.name ? `, ${P.name}` : ""}`, P.relation === "caregiver" ? "We'll help you find and join a clinical trial for someone you care for." : "We'll help you find and join a clinical trial, step by step."),
     h("div", { class: "split" },
-      h("div", { class: "stack", style: "gap:18px" }, ...blocks),
-      h("div", { class: "stack", style: "gap:18px" },
-        h("section", { class: "card stack" }, h("h3", {}, P.country ? `Trials recruiting in ${P.country}` : "Trials recruiting near you"),
-          h("p", { class: "kpi-inline" }, h("b", {}, String(P.country ? inCountry : S.trials.length || "…")), P.country ? " treatment trials have a site open in your country." : " treatment trials in our index."),
-          h("button", { class: "btn", style: "align-self:flex-start", onclick: () => openDirectory({ country: P.country || "" }) }, "Browse them")),
+      h("div", { class: "stack", style: "gap:18px" }, status, tiles,
+        h("section", { class: "card stack" }, h("div", { class: "section-title" }, h("h3", {}, P.country ? `Trials recruiting now in ${P.country}` : "Trials recruiting now"),
+            h("a", { class: "small", href: "#trials", onclick: (e) => { e.preventDefault(); openDirectory({ country: P.country || "" }); } }, "All")),
+          S.trials.length ? nearList(trialsNear(P.country, M?.case?.cancer_type || "", 4), P.country) : h("p", { class: "muted" }, "Loading…"))),
+      h("div", { class: "stack", style: "gap:18px" }, talk, faq(),
         h("section", { class: "card stack" }, h("h3", {}, "Your information is private"),
-          h("p", { class: "small muted" }, S.standalone ? "What you enter stays in this browser. Nothing is shared." : "Only you can see your profile and your matches. Doctors on Eligo cannot see them unless you show them."),
+          h("p", { class: "small muted" }, S.standalone ? "What you enter stays in this browser. Nothing is shared." : "Only you can see your profile, your matches and your enrollments."),
           h("p", { class: "small muted" }, "Eligo does not give medical advice. Always decide together with your oncologist.")))));
 }
 
