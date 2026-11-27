@@ -80,6 +80,12 @@ It runs two ways:
 Published pages can't call ClinicalTrials.gov, so the app reads `web/trials.json`: every recruiting cancer
 treatment trial with a site in Latin America.
 
+### Open it as a single file
+
+`Eligo.html` (in the repo's top folder) is the whole app in one file: the app, the trial snapshot and the Anthropic SDK.
+On GitHub, open `Eligo.html`, click the download button (**Download raw file**), then double-click the downloaded file.
+It opens in your browser; add your API key in **Settings** the first time. Data stays in that browser.
+
 ### Turn on the website (once)
 
 1. On GitHub: **Settings → Pages**.
@@ -97,4 +103,4 @@ bun run snapshot
 bun run build:site
 ```
 
-`build:site` writes `docs/index.html`, `docs/trials.json` and `docs/standalone.js` (the Anthropic SDK bundled for the browser).
+`build:site` writes `docs/index.html`, `docs/trials.json`, `docs/standalone.js` (the Anthropic SDK bundled for the browser) and the single-file `Eligo.html`.
