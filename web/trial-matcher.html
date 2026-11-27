@@ -203,6 +203,12 @@
   .work-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .quick { display: flex; flex-wrap: wrap; gap: 8px; }
 
+  .lang { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+  .lang-select { border: 0; background: transparent; padding: 4px 2px; font-size: .86rem; color: var(--muted); max-width: 130px; cursor: pointer; }
+  .lang-select:hover { color: var(--fg); }
+  [dir="rtl"] .bar-n { text-align: left; }
+  .view-notice { max-width: 1160px; margin: 16px auto 0; }
+
   /* Trials */
   .trial { display: flex; flex-direction: column; gap: 8px; }
   .trial .t-title { font-weight: 600; }
@@ -271,7 +277,14 @@ const NAV_CLINICAL = [["home", "Home", "Home"], ["match", "Matcher", "Match"], [
 const NAV_PATIENT = [["home", "Home", "Home"], ["mytrials", "My trials", "My trials"], ["trials", "All trials", "All trials"]];
 const CLINICAL_ROUTES = new Set(["match", "patients", "patient", "boards", "board"]);
 const CLINICAL_TITLES = ["Medical oncologist", "Hematologist", "Surgical oncologist", "Radiation oncologist", "Pathologist", "Radiologist", "Principal investigator", "Trial coordinator", "Research nurse", "Sponsor / CRO", "Other clinician"];
-const LANGUAGES = ["Spanish", "Portuguese", "English", "Guaraní", "French", "Japanese", "Other"];
+// [English name used in prompts, name in that language]. Any other language can be typed in the profile.
+const UI_LANGS = [["English", "English"], ["Spanish", "Español"], ["Portuguese", "Português"], ["Guaraní", "Avañe'ẽ"], ["Quechua", "Runasimi"], ["Aymara", "Aymar aru"],
+  ["French", "Français"], ["Haitian Creole", "Kreyòl ayisyen"], ["Italian", "Italiano"], ["German", "Deutsch"], ["Dutch", "Nederlands"], ["Polish", "Polski"], ["Romanian", "Română"],
+  ["Greek", "Ελληνικά"], ["Russian", "Русский"], ["Ukrainian", "Українська"], ["Turkish", "Türkçe"], ["Arabic", "العربية"], ["Hebrew", "עברית"], ["Persian", "فارسی"],
+  ["Hindi", "हिन्दी"], ["Bengali", "বাংলা"], ["Urdu", "اردو"], ["Chinese (Simplified)", "中文（简体）"], ["Chinese (Traditional)", "中文（繁體）"], ["Japanese", "日本語"], ["Korean", "한국어"],
+  ["Vietnamese", "Tiếng Việt"], ["Thai", "ไทย"], ["Indonesian", "Bahasa Indonesia"], ["Tagalog", "Tagalog"], ["Swahili", "Kiswahili"], ["Amharic", "አማርኛ"], ["Yoruba", "Yorùbá"]];
+const RTL = new Set(["Arabic", "Hebrew", "Persian", "Urdu"]);
+const LANGUAGES = UI_LANGS.map((l) => l[0]);
 const COUNTRIES = [...REGIONS_LIST(), "Spain", "Portugal", "Other"];
 function REGIONS_LIST() { return ["Argentina","Bolivia","Brazil","Chile","Colombia","Costa Rica","Dominican Republic","Ecuador","El Salvador","Guatemala","Honduras","Mexico","Nicaragua","Panama","Paraguay","Peru","Puerto Rico","Uruguay","Venezuela","United States","Canada"]; }
 const CANCER_GROUPS = [["Lung", /lung|nsclc|sclc/], ["Breast", /breast/], ["Colorectal", /colorectal|colon|rectal/], ["Prostate", /prostat/],
@@ -782,6 +795,73 @@ function viewEnroll(r) {
   return wrap;
 }
 
+
+/* ---------------- interface translation ----------------
+   The interface is written in English. For another language, each screen's text is sent to Claude once,
+   the translations are cached in this browser, and text nodes are swapped in place after every render.
+   Anything inside translate="no" (codes, trial IDs, what people typed) is left as written. */
+const TR = { lang: "English", cache: {}, pending: new Set(), busy: false, failed: false, orig: new WeakMap() };
+function loadLang(lang) {
+  TR.lang = lang || "English"; TR.failed = false; TR.pending.clear();
+  try { TR.cache = JSON.parse(localStorage.getItem(`eligo:tr:${TR.lang}`) || "{}"); } catch { TR.cache = {}; }
+  try { localStorage.setItem("eligo:ui-lang", TR.lang); } catch {}
+  document.documentElement.lang = TR.lang === "English" ? "en" : "";
+  document.documentElement.dir = RTL.has(TR.lang) ? "rtl" : "ltr";
+}
+try { loadLang(localStorage.getItem("eligo:ui-lang") || "English"); } catch { loadLang("English"); }
+const translatable = (t) => t && t.length <= 600 && /\p{L}{2,}/u.test(t);
+function skip(el) { return !el || el.closest('[translate="no"], .mono, script, style, textarea, code'); }
+function applyTranslations() {
+  if (TR.lang === "English") return;
+  const root = document.querySelector(".app"); if (!root) return;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    if (skip(n.parentElement)) continue;
+    const src = TR.orig.get(n) ?? n.nodeValue, key = src.trim();
+    if (!translatable(key)) continue;
+    TR.orig.set(n, src);
+    if (TR.cache[key] != null) { const out = src.replace(key, TR.cache[key]); if (n.nodeValue !== out) n.nodeValue = out; }
+    else TR.pending.add(key);
+  }
+  for (const el of root.querySelectorAll("[placeholder], [aria-label], [title]")) {
+    if (skip(el)) continue;
+    for (const a of ["placeholder", "aria-label", "title"]) {
+      if (!el.hasAttribute(a)) continue;
+      const key = (el.dataset["tr_" + a.replace("-", "")] ??= el.getAttribute(a)).trim();
+      if (!translatable(key)) continue;
+      if (TR.cache[key] != null) el.setAttribute(a, TR.cache[key]); else TR.pending.add(key);
+    }
+  }
+  if (TR.pending.size) flushTranslations();
+}
+async function flushTranslations() {
+  if (TR.busy || TR.failed || !S.sample || !TR.pending.size) return;
+  TR.busy = true;
+  const lang = TR.lang, batch = [...TR.pending].slice(0, 120);
+  try {
+    const out = await S.sample.json(`Translate these user-interface strings of Eligo, an app that helps cancer patients and doctors find and enroll in clinical trials, from English into ${lang}.
+Use plain, warm, everyday words a patient's family understands, and the usual medical terms in ${lang}. Keep numbers, trial IDs (NCT…), drug names, punctuation and arrows. Keep the meaning exact; do not add or drop information.
+Reply with only a JSON object mapping each input string, exactly as given, to its translation.
+
+${JSON.stringify(batch)}`, { modelTier: "quick" });
+    if (lang !== TR.lang) return;
+    for (const k of batch) { TR.pending.delete(k); if (typeof out?.[k] === "string" && out[k].trim()) TR.cache[k] = out[k]; else TR.cache[k] = k; }
+    try { localStorage.setItem(`eligo:tr:${lang}`, JSON.stringify(TR.cache)); } catch {}
+  } catch (e) {
+    TR.failed = true;   // keep English rather than retrying in a loop; switching language again retries
+  } finally {
+    TR.busy = false;
+  }
+  applyTranslations();
+}
+function setUiLanguage(lang) { loadLang(lang); renderShell(); renderView(); }
+function langPicker() {
+  const sel = h("select", { id: "ui-lang", class: "lang-select", "aria-label": "Language", translate: "no", onchange: (e) => setUiLanguage(e.target.value) },
+    ...UI_LANGS.map(([en, native]) => h("option", { value: en, selected: TR.lang === en }, native)),
+    !LANGUAGES.includes(TR.lang) ? h("option", { value: TR.lang, selected: true }, TR.lang) : null);
+  return h("label", { class: "lang", title: "Language" }, h("span", { html: icon("globe"), style: "display:inline-flex;width:16px" }), sel);
+}
+
 /* ---------------- routing & shell ---------------- */
 function route() {
   const raw = (location.hash || "#home").slice(1);
@@ -805,7 +885,8 @@ function renderShell() {
   const who = S.profile?.name || "My profile";
   const meEl = () => S.profile ? [h("a", { href: "#profile", class: "row", style: "gap:8px;text-decoration:none;color:inherit", title: "Your profile" },
     h("img", { class: "avatar", src: safeUrl(me?.avatarUrl), alt: "" }), h("span", { class: "name" }, who))] : [];
-  $("#me-box").replaceChildren(settings || "", ...meEl());
+  $("#me-box").replaceChildren(langPicker(), settings || "", ...meEl());
+  applyTranslations();
 }
 
 let pending = false;
@@ -828,6 +909,9 @@ function renderView(fromData = false) {
   else if (r.name === "enroll" && isPatient() && r.owner !== "me") node = viewMyTrials();
   else node = { home: viewHome, match: viewMatch, patients: viewPatients, patient: viewPatient, boards: viewBoards, board: viewBoard, trials: viewTrials, mytrials: viewMyTrials, enroll: viewEnroll }[r.name](r);
   view.replaceChildren(node);
+  if (TR.lang !== "English" && !S.sample && r.name !== "settings") view.prepend(h("p", { class: "notice view-notice" },
+    S.standalone ? "Translating the app needs Claude. Add your Anthropic API key in Settings, or switch the language back to English." : "Translating the app needs Claude, which runs when Eligo is opened in Claude."));
+  applyTranslations();
   if (focusedId) { const el = document.getElementById(focusedId); if (el) { el.focus({ preventScroll: true }); if (sel && "setSelectionRange" in el) try { el.setSelectionRange(...sel); } catch {} } }
   if (fromData) window.scrollTo(0, scroll);
 }
@@ -1088,7 +1172,7 @@ function homePatient() {
 function viewProfile() {
   const first = !S.profile;
   const d = S.drafts.profile ||= { role: S.profile?.role || "", name: S.profile?.name || (S.standalone ? "" : S.me?.name || ""), relation: S.profile?.relation || "self",
-    language: S.profile?.language || "Spanish", country: S.profile?.country || "", city: S.profile?.city || "", title: S.profile?.title || CLINICAL_TITLES[0],
+    language: S.profile?.language || (TR.lang !== "English" ? TR.lang : "Spanish"), country: S.profile?.country || "", city: S.profile?.city || "", title: S.profile?.title || CLINICAL_TITLES[0],
     specialty: S.profile?.specialty || SPECIALTIES[0], institution: S.profile?.institution || "", languages: S.profile?.languages || "" };
   const wrap = h("div", { class: "view" }, head(first ? "Welcome to Eligo" : "Your profile", first ? "Tell us who you are, so Eligo shows you the right tools." : "Update how you appear and what Eligo shows you."));
   if (!S.myColl) { wrap.append(h("div", { class: "card" }, h("p", {}, "Sign in to Claude to create your profile."))); return wrap; }
@@ -1103,10 +1187,17 @@ function viewProfile() {
   const select = (id, label, key, options) => h("div", { class: "field" }, h("label", { for: id }, label),
     h("select", { id, onchange: (e) => { d[key] = e.target.value; } }, ...options.map((o) => Array.isArray(o) ? h("option", { value: o[0], selected: d[key] === o[0] }, o[1]) : h("option", { value: o, selected: d[key] === o }, o))));
   const countryOpts = [["", "Select a country"], ...COUNTRIES.map((c) => [c, c])];
+  const langInput = () => {
+    const el = h("input", { type: "text", id: "pf-language", list: "pf-language-list", autocomplete: "off", placeholder: "Choose or type any language", oninput: (e) => { d.language = e.target.value; } });
+    el.value = d.language;
+    return h("div", { class: "field" }, h("label", { for: "pf-language" }, "Language for explanations"), el,
+      h("datalist", { id: "pf-language-list" }, ...LANGUAGES.map((l) => h("option", { value: l }))),
+      h("span", { class: "small muted" }, "Any language works, for example Guaraní, Quechua or Haitian Creole."));
+  };
   const fields = d.role === "patient"
     ? [input("pf-name", "What should we call you? (optional)", "name", { placeholder: "A first name or nickname", maxlength: "60" }),
        select("pf-relation", "Who are you looking for trials for?", "relation", [["self", "Myself"], ["caregiver", "A family member or someone I care for"]]),
-       select("pf-language", "Language for explanations", "language", LANGUAGES),
+       langInput(),
        select("pf-country", "Country", "country", countryOpts), input("pf-city", "City (optional)", "city", { maxlength: "80" })]
     : [input("pf-name", "Your name, as colleagues should see it", "name", { placeholder: "Dr. Ana Benítez", maxlength: "80" }),
        select("pf-title", "Role", "title", CLINICAL_TITLES), select("pf-specialty", "Specialty", "specialty", SPECIALTIES),
@@ -1116,8 +1207,13 @@ function viewProfile() {
   const save = h("button", { class: "btn primary", onclick: async () => {
     if (d.role === "clinical" && !d.name.trim()) { msg.textContent = "Add your name so colleagues know who wrote an opinion."; return; }
     if (!d.country) { msg.textContent = "Choose a country."; return; }
+    if (d.role === "patient" && !d.language.trim()) { msg.textContent = "Choose the language for explanations."; return; }
     save.disabled = true; msg.textContent = "";
-    try { await saveProfile(d); S.drafts.profile = null; go("home"); } catch (e) { msg.textContent = e?.code === "no_identity" ? "Sign in to Claude to save your profile." : dbFail(e); save.disabled = false; }
+    try {
+      await saveProfile(d); S.drafts.profile = null;
+      if (d.role === "patient" && d.language && TR.lang === "English" && d.language.trim().toLowerCase() !== "english") loadLang(d.language.trim());
+      go("home"); renderShell();
+    } catch (e) { msg.textContent = e?.code === "no_identity" ? "Sign in to Claude to save your profile." : dbFail(e); save.disabled = false; }
   } }, first ? "Continue" : "Save profile");
   wrap.append(h("div", { class: "card stack", style: "max-width:640px" }, h("div", { class: "grid-2", style: "gap:12px 16px" }, ...fields),
     h("p", { class: "small muted" }, d.role === "patient"
@@ -1404,7 +1500,7 @@ function viewBoard(r) {
     const right = h("div", { class: "stack", style: "gap:18px" });
 
     // Case brief (Claude) + question
-    left.append(h("div", { class: "card stack" }, h("div", { class: "label" }, "Question from the treating doctor"), h("p", { style: "font-size:1.05rem;white-space:pre-wrap" }, b.question),
+    left.append(h("div", { class: "card stack" }, h("div", { class: "label" }, "Question from the treating doctor"), h("p", { style: "font-size:1.05rem;white-space:pre-wrap", translate: "no" }, b.question),
       b.specialties?.length ? h("div", { class: "row" }, ...b.specialties.map((s) => h("span", { class: "chip" }, s))) : null));
     if (b.brief) left.append(h("div", { class: "card brief stack" }, h("h3", {}, "Case brief"),
       b.brief.one_liner ? h("p", {}, b.brief.one_liner) : null,
@@ -1426,8 +1522,8 @@ function viewBoard(r) {
       return h("div", { class: "card opinion" }, h("img", { class: "avatar", src: safeUrl(pr.avatarUrl), alt: "", style: "width:36px;height:36px" }),
         h("div", { class: "body" }, h("div", { class: "who" }, h("b", {}, mem.name || pr.name || "A specialist"), h("span", { class: "chip" }, o.specialty || "Specialist"), h("span", { class: "muted small" }, ago(o.created_at))),
           role ? h("p", { class: "small muted" }, role) : null,
-          h("p", { style: "white-space:pre-wrap" }, o.recommendation),
-          o.trials_view ? h("div", {}, h("div", { class: "label" }, "On the trials"), h("p", { class: "small", style: "white-space:pre-wrap" }, o.trials_view)) : null));
+          h("p", { style: "white-space:pre-wrap", translate: "no" }, o.recommendation),
+          o.trials_view ? h("div", {}, h("div", { class: "label" }, "On the trials"), h("p", { class: "small", style: "white-space:pre-wrap", translate: "no" }, o.trials_view)) : null));
     }));
     drawOps();
     if (ids.length && S.user) S.user.profiles(ids).then(drawOps).catch(() => {});
