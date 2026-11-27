@@ -159,6 +159,21 @@
   .dir-title { font-weight: 500; }
   .dir-body { padding: 0 16px 16px; }
 
+  .meter { display: flex; height: 8px; border-radius: 2px; overflow: hidden; background: var(--surface-2); }
+  .meter .m-pass { background: var(--likely); } .meter .m-unknown { background: var(--possible); } .meter .m-fail { background: var(--danger); }
+  .crit { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  .crit:last-child { border-bottom: 0; }
+  .crit-mark { width: 22px; height: 22px; border-radius: 3px; display: grid; place-items: center; font-weight: 600; font-size: .8rem; color: var(--surface); background: var(--likely); }
+  .crit[data-status="unknown"] .crit-mark { background: var(--possible); } .crit[data-status="fail"] .crit-mark { background: var(--danger); }
+  .crit-status { font-size: .78rem; font-weight: 600; color: var(--likely); text-transform: uppercase; letter-spacing: .04em; }
+  .crit[data-status="unknown"] .crit-status { color: var(--possible); } .crit[data-status="fail"] .crit-status { color: var(--danger); }
+  .tracker { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .tracker li { display: flex; gap: 10px; align-items: center; padding: 6px 0; position: relative; }
+  .tracker li[data-done="true"] > span { color: var(--fg); } .tracker li[data-done="false"] > span { color: var(--muted); }
+  .tick { width: 22px; height: 22px; flex: none; border: 1px solid var(--line-strong); border-radius: 3px; background: var(--surface); cursor: pointer; font-size: .8rem; font-weight: 600; color: var(--accent-fg); padding: 0; }
+  .tick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); }
+  #enr-photo { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
   /* Trials */
   .trial { display: flex; flex-direction: column; gap: 8px; }
   .trial .t-title { font-weight: 600; }
@@ -247,6 +262,11 @@ const REGIONS = {
 };
 const SPECIALTIES = ["Medical oncology", "Radiation oncology", "Surgical oncology", "Thoracic surgery", "Pathology", "Radiology", "Hematology", "Pediatric oncology", "Palliative care", "Clinical trials"];
 const MAX_CANDIDATES = 8, MAX_CRITERIA_CHARS = 12000;
+const STEPS = [["interested", "Chose this trial"], ["precheck", "Requirements checked"], ["records", "Medical records gathered"], ["doctor", "Oncologist agrees it's a good option"],
+  ["contacted", "Trial team contacted"], ["screening", "Screening visit scheduled"], ["enrolled", "Enrolled"]];
+const DOCS = [["pathology", "Pathology or biopsy report"], ["imaging", "Latest scans (CT, MRI or PET) and their reports"], ["labs", "Recent blood tests"],
+  ["treatments", "List of treatments received, with dates"], ["meds", "Current medicines and allergies"], ["id", "ID or passport (needed to travel)"], ["insurance", "Insurance or coverage information"]];
+const STATUS_LABEL = { pass: "Meets", fail: "Doesn't meet", unknown: "Needs information" };
 const PROX_LABEL = { same_country: "Sites in patient's country", same_region: "Sites in patient's region", abroad: "Sites in other regions" };
 const FIT_RANK = { likely: 0, possible: 1, unlikely: 2 }, PROX_RANK = { same_country: 0, same_region: 1, abroad: 2 };
 
@@ -290,6 +310,7 @@ const S = {
   self: { text: "", running: false, step: "", error: "", result: null, ctl: null },
   profile: null, profileLoaded: false, myMatch: null, members: {}, myColl: null,
   dir: { q: "", country: "", limit: 25 },
+  enrollments: [], myEnroll: {}, myFacts: [], enr: {},
   drafts: {},
 };
 const isPatient = () => S.profile?.role === "patient";
@@ -479,15 +500,269 @@ ${text}
   await S.db.collection("boards").doc(board.id).update({ consensus: { agreement: arr(c?.agreement), disagreement: arr(c?.disagreement), next_steps: arr(c?.next_steps), opinion_count: ops.length, at: now() } });
 }
 
+
+/* ---------------- enrollment ---------------- */
+function enrollmentFor(owner, trialId) {
+  return owner === "me" ? S.myEnroll[trialId] : S.enrollments.find((e) => e.patient_id === owner && e.trial_id === trialId);
+}
+function stepLabel(e) {
+  const done = STEPS.filter(([k]) => e.steps?.[k]);
+  return done.length ? done[done.length - 1][1] : STEPS[0][1];
+}
+function checkCounts(e) {
+  const c = e?.check?.criteria || [];
+  return { pass: c.filter((x) => x.status === "pass").length, fail: c.filter((x) => x.status === "fail").length, unknown: c.filter((x) => x.status === "unknown").length, total: c.length };
+}
+function enrollmentList(owner, items) {
+  return h("div", { class: "card", style: "padding:0" }, ...items.map((e) => {
+    const t = S.byId.get(e.trial_id), n = checkCounts(e);
+    return h("a", { class: "dir-row clickable", href: `#enroll-${owner}-${e.trial_id}`, style: "padding:12px 16px;display:flex;flex-direction:column;gap:3px" },
+      h("span", { style: "font-weight:500" }, t?.title || e.trial_id),
+      h("span", { class: "small muted" }, `${stepLabel(e)}${n.total ? ` · ${n.pass} of ${n.total} requirements met, ${n.unknown} need information${n.fail ? `, ${n.fail} not met` : ""}` : ""}`));
+  }));
+}
+/* Who the enrollment is for, and where its data lives. */
+function enrollCtx(owner) {
+  if (owner === "me") {
+    const M = S.myMatch; if (!M) return null;
+    return { owner, label: S.profile?.name || "You", forSelf: true, case: M.case || {}, text: M.text || "", facts: S.myFacts, lang: S.profile?.language || "English",
+      country: S.profile?.country || M.case?.country, back: "#mytrials", backLabel: "My trials",
+      save: (tid, body) => S.db.collection(S.myColl).doc(`enroll-${tid}`).set(body),
+      addFacts: (items) => S.db.collection(S.myColl).doc("facts").set({ items: [...S.myFacts, ...items] }) };
+  }
+  const p = S.patients.find((x) => x.id === owner); if (!p) return null;
+  return { owner, label: p.alias, forSelf: false, case: p.case || {}, text: p.text || "", facts: p.extra_facts || [], lang: "English",
+    country: p.case?.country, back: `#patient-${p.id}`, backLabel: p.alias,
+    save: (tid, body) => S.db.collection("enrollments").doc(`${owner}-${tid}`).set({ ...body, patient_id: owner }),
+    addFacts: (items) => S.db.collection("patients").doc(owner).update({ extra_facts: [...(p.extra_facts || []), ...items] }) };
+}
+async function saveEnroll(ctx, tid, patch) {
+  const cur = enrollmentFor(ctx.owner, tid) || { trial_id: tid, created_at: now(), steps: { interested: now() }, docs: {}, answers: {}, check: null, letter: null };
+  const body = structuredClone({ ...cur, ...patch, trial_id: tid, updated_at: now() });
+  delete body.id;
+  await ctx.save(tid, body);
+}
+function patientInfoText(ctx, extraAnswers = []) {
+  const facts = [...ctx.facts.map((f) => `- ${f.text}${f.source === "photo" ? " (from a report photo)" : ""}`), ...extraAnswers.map((a) => `- ${a}`)];
+  return `<case_summary>${JSON.stringify(ctx.case)}</case_summary>
+<original_description>${ctx.text}</original_description>
+<additional_facts>
+${facts.join("\n") || "none"}
+</additional_facts>`;
+}
+async function checkEligibility(ctx, t, answerLines, signal) {
+  const L = ctx.lang;
+  const res = await S.sample.json(`You are a careful clinical trial screening assistant helping ${ctx.forSelf ? "a patient (or their family)" : "an oncologist"} prepare to enroll in a trial.
+
+Split the trial's eligibility criteria into individual requirements (at most 30; merge administrative ones such as signed consent or contraception into one). Judge each ONLY from the patient information below:
+- "pass": the requirement is satisfied (for an exclusion, the patient clearly does not have that condition)
+- "fail": the information clearly shows the patient does not satisfy it
+- "unknown": the information is missing or unclear. Never guess lab values, dates or facts that are not stated.
+
+Write "plain", "reason" and "needed" in ${L}, simply, for someone with no medical training. "original" is a short quote of the criterion in English.
+"needed" (only for unknown) says exactly what to provide, e.g. "Your most recent blood test showing kidney function (creatinine)".
+Then write "summary" (2-3 sentences in ${L}: the overall picture, no promises), "questions_for_screening" (in ${L}) and "documents" (specific documents the study team will likely ask for, in ${L}).
+
+Reply with only JSON:
+{"criteria": [{"id": "c1", "type": "inclusion|exclusion", "plain": "", "original": "", "status": "pass|fail|unknown", "reason": "", "needed": ""}], "summary": "", "questions_for_screening": [], "documents": []}
+
+<patient_information>
+${patientInfoText(ctx, answerLines)}
+</patient_information>
+
+<trial id="${t.id}">
+Title: ${t.title}
+Age ${t.min_age || "no minimum"} to ${t.max_age || "no maximum"}; sex: ${t.sex || "all"}
+Eligibility criteria:
+${t.eligibility.length > 20000 ? t.eligibility.slice(0, 20000) + "\n[truncated; full list on ClinicalTrials.gov]" : t.eligibility}
+</trial>`, { signal, cache: false });
+  const criteria = (Array.isArray(res?.criteria) ? res.criteria : []).map((c, i) => ({ id: String(c.id || `c${i + 1}`), type: c.type === "exclusion" ? "exclusion" : "inclusion",
+    plain: String(c.plain || ""), original: String(c.original || ""), status: ["pass", "fail", "unknown"].includes(c.status) ? c.status : "unknown",
+    reason: String(c.reason || ""), needed: String(c.needed || "") }));
+  if (!criteria.length) throw { code: "invalid_json" };
+  return { criteria, summary: String(res.summary || ""), questions: arr(res.questions_for_screening), documents: arr(res.documents), checked_at: now() };
+}
+async function draftLetter(ctx, t, e, site) {
+  const prof = S.profile || {};
+  const from = ctx.forSelf ? `the patient${prof.relation === "caregiver" ? "'s family member" : ""}` : `${prof.name || "the treating oncologist"}${prof.title ? `, ${prof.title}` : ""}${prof.institution ? `, ${prof.institution}` : ""}`;
+  const res = await S.sample.json(`Write a short, professional message to a clinical trial's study team asking whether a patient can be screened. It is sent by ${from}.
+Write it in English${site?.[2] && /Brazil|Portugal/.test(site[2]) ? ", followed by a Portuguese version" : site?.[2] && !/United States|Canada/.test(site[2]) ? ", followed by a Spanish version" : ""}.
+Include: the trial ID and title; a de-identified summary of the patient (age, sex, diagnosis, stage, biomarkers, treatments so far, performance status if known); which key requirements appear met and which still need confirmation; a request for a screening appointment${site ? ` at ${site.filter(Boolean).join(", ")}` : ""}; and a question about travel and accommodation support.
+Never include names, ID numbers, addresses or phone numbers of the patient. Refer to the patient as "${ctx.forSelf ? "the patient" : ctx.label}".
+Reply with only JSON: {"subject": "", "body": ""}
+
+${patientInfoText(ctx)}
+<requirements_check>${JSON.stringify((e.check?.criteria || []).map((c) => ({ status: c.status, requirement: c.original || c.plain })))}</requirements_check>
+<trial id="${t.id}">${t.title}</trial>`, { cache: false });
+  return { subject: String(res?.subject || `Screening inquiry: ${t.id}`), body: String(res?.body || ""), at: now() };
+}
+async function shrinkImage(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    return await new Promise((res) => c.toBlob((b) => res(b || file), "image/jpeg", 0.85));
+  } catch { return file; }
+}
+async function readReportPhoto(file) {
+  const img = await shrinkImage(file);
+  const res = await S.sample.json(`This is a photo of a medical document (a report, lab result, prescription or letter). Extract the clinically relevant facts as short English statements: diagnosis, stage, biomarkers or mutations, lab values with their dates, treatments with dates, performance status, other conditions, current medicines and allergies.
+Never repeat names, ID numbers, addresses, phone numbers or other personal identifiers. If the image is not a medical document or is unreadable, return no facts.
+Reply with only JSON: {"document_type": "", "facts": []}`, { images: [img], cache: false });
+  return { type: String(res?.document_type || "Medical document"), facts: arr(res?.facts).slice(0, 40) };
+}
+
+function viewEnroll(r) {
+  const ctx = enrollCtx(r.owner), t = S.byId.get(r.trial);
+  const wrap = h("div", { class: "view" });
+  if (!S.trials.length) { wrap.append(h("p", { class: "muted" }, "Loading…")); return wrap; }
+  if (!ctx || !t) { wrap.append(h("div", { class: "card empty" }, h("p", {}, "This enrollment isn't available. The trial or the patient record may have been removed."), h("a", { class: "btn", href: "#home" }, "Go home"))); return wrap; }
+  const e = enrollmentFor(ctx.owner, t.id);
+  const W = S.enr[`${ctx.owner}-${t.id}`] ||= { running: "", error: "", answers: {}, note: "" };
+  const m = (ctx.owner === "me" ? S.myMatch?.matches : S.patients.find((p) => p.id === ctx.owner)?.matches)?.find((x) => x.id === t.id);
+  const you = ctx.forSelf;
+  const fail = (err) => { W.running = ""; W.error = err?.code && !err.code.startsWith?.("quota") && err.code !== "invalid_argument" ? sampleError(err) : dbFail(err); renderView(); };
+
+  const runCheck = async () => {
+    const answered = Object.entries(W.answers).filter(([, v]) => v.trim());
+    const lines = answered.map(([cid, v]) => { const c = e?.check?.criteria.find((x) => x.id === cid); return `About "${c?.original || c?.plain || cid}": ${v.trim()}`; });
+    W.running = "check"; W.error = ""; renderView();
+    try {
+      // Answers become lasting facts about the patient, reused for every other trial.
+      if (lines.length) await ctx.addFacts(lines.map((text) => ({ text, source: "answer", at: now() })));
+      // ctx.facts was read before these answers were saved, so pass them along explicitly.
+      const check = await checkEligibility(ctx, t, lines);
+      await saveEnroll(ctx, t.id, { check, answers: {}, steps: { ...(e?.steps || { interested: now() }), precheck: e?.steps?.precheck || now() } });
+      W.answers = {}; W.running = ""; renderView();
+    } catch (err) { fail(err); }
+  };
+
+  wrap.append(h("a", { class: "btn ghost", href: ctx.back, style: "align-self:flex-start;padding-left:0" }, ic("back"), ctx.backLabel),
+    head(t.title, [t.id, t.phases.map((p) => p.replace("PHASE", "Phase ")).join(", "), you ? "Your enrollment" : `Enrollment for ${ctx.label}`].filter(Boolean).join(" · "),
+      m ? h("span", { class: "pill", "data-tone": m.fit }, m.fit) : null));
+
+  if (!e) {
+    wrap.append(h("div", { class: "card stack", style: "max-width:720px" }, h("h2", {}, "Start enrollment"),
+      h("p", {}, you ? "Eligo will check every requirement of this trial against your information, tell you exactly what's missing, and help you gather your records and contact the study team."
+                     : "Eligo will check each eligibility criterion against this patient's record, list what's missing, and help gather records and contact the study team."),
+      h("button", { class: "btn primary", style: "align-self:flex-start", disabled: !S.sample || !!W.running, onclick: runCheck }, W.running ? "Checking requirements…" : "Check requirements"),
+      !S.sample ? h("p", { class: "small muted" }, S.standalone ? "Add your API key in Settings first." : "This uses Claude and runs when Eligo is opened in Claude.") : null,
+      W.running ? h("p", { class: "small muted" }, "Reading each requirement. Usually 30 to 90 seconds.") : null,
+      W.error ? h("p", { class: "error" }, W.error) : null));
+    return wrap;
+  }
+
+  const n = checkCounts(e), crit = e.check?.criteria || [];
+  const left = h("div", { class: "stack", style: "gap:18px" }), right = h("div", { class: "stack", style: "gap:18px" });
+
+  // Requirements
+  if (e.check) {
+    const pct = (k) => n.total ? (n[k] / n.total * 100).toFixed(1) : 0;
+    left.append(h("section", { class: "card stack" },
+      h("div", { class: "section-title" }, h("h2", {}, you ? "Do you meet the requirements?" : "Eligibility check"), h("span", { class: "small muted" }, `Checked ${ago(e.check.checked_at)}`)),
+      h("div", { class: "meter", role: "img", "aria-label": `${n.pass} met, ${n.unknown} need information, ${n.fail} not met` },
+        h("span", { class: "m-pass", style: `width:${pct("pass")}%` }), h("span", { class: "m-unknown", style: `width:${pct("unknown")}%` }), h("span", { class: "m-fail", style: `width:${pct("fail")}%` })),
+      h("div", { class: "row small", style: "gap:4px 18px" }, h("span", {}, h("b", {}, String(n.pass)), " meet"), h("span", {}, h("b", {}, String(n.unknown)), " need information"), h("span", {}, h("b", {}, String(n.fail)), " don't meet"), h("span", { class: "muted" }, `of ${n.total}`)),
+      e.check.summary ? h("p", {}, e.check.summary) : null,
+      n.fail ? h("p", { class: "notice" }, you ? "At least one requirement doesn't seem to be met. Ask your oncologist: sometimes the information is incomplete, and other trials may fit better." : "At least one criterion appears unmet. Confirm with the source records before ruling the trial out.") : null));
+
+    const answerBox = (c) => {
+      const ta = h("textarea", { id: `ans-${c.id}`, style: "min-height:56px", placeholder: you ? "Your answer, if you know it" : "Answer from the record", oninput: (ev) => { W.answers[c.id] = ev.target.value; recheck.disabled = !Object.values(W.answers).some((v) => v.trim()); } });
+      ta.value = W.answers[c.id] || "";
+      return ta;
+    };
+    const recheck = h("button", { class: "btn primary", disabled: !Object.values(W.answers).some((v) => v.trim()) || !!W.running || !S.sample, onclick: runCheck }, W.running === "check" ? "Re-checking…" : "Re-check with my answers");
+    const order = { unknown: 0, fail: 1, pass: 2 };
+    const sorted = [...crit].sort((a, b) => order[a.status] - order[b.status]);
+    left.append(h("section", { class: "card", style: "padding:0" }, ...sorted.map((c) => h("div", { class: "crit", "data-status": c.status },
+      h("span", { class: "crit-mark", "aria-hidden": "true" }, c.status === "pass" ? "✓" : c.status === "fail" ? "✕" : "?"),
+      h("div", { class: "stack", style: "gap:4px" },
+        h("div", { class: "row", style: "gap:4px 10px" }, h("span", { class: "crit-status" }, STATUS_LABEL[c.status]), h("span", { class: "chip" }, c.type === "exclusion" ? "Exclusion" : "Inclusion")),
+        h("p", { style: "font-weight:500" }, c.plain || c.original), c.reason ? h("p", { class: "small muted" }, c.reason) : null,
+        c.status === "unknown" && c.needed ? h("p", { class: "small" }, h("b", {}, "Needed: "), c.needed) : null,
+        c.status === "unknown" ? answerBox(c) : null,
+        c.original ? h("details", { class: "small" }, h("summary", {}, "Original wording"), h("p", { class: "muted" }, c.original)) : null)))));
+    if (n.unknown) left.append(h("div", { class: "row" }, recheck, h("span", { class: "small muted" }, "Your answers are saved to your information and reused for other trials.")));
+  }
+
+  // Add information: notes and report photos
+  const note = h("textarea", { id: "enr-note", style: "min-height:70px", placeholder: you ? "Anything else: latest test results, other illnesses, medicines…" : "Additional facts from the record: labs with dates, comorbidities, medicines…", oninput: (ev) => { W.note = ev.target.value; } });
+  note.value = W.note;
+  const photo = h("input", { type: "file", id: "enr-photo", accept: "image/jpeg,image/png,image/webp", style: "max-width:100%", onchange: async (ev) => {
+    const file = ev.target.files?.[0]; if (!file) return;
+    W.running = "photo"; W.error = ""; W.photoMsg = ""; renderView();
+    try {
+      const r2 = await readReportPhoto(file);
+      if (!r2.facts.length) { W.photoMsg = "No medical information could be read from that photo. Try a clearer, flat, well-lit picture."; }
+      else { await ctx.addFacts(r2.facts.map((text) => ({ text, source: "photo", doc: r2.type, at: now() }))); W.photoMsg = `Added ${r2.facts.length} facts from the ${r2.type.toLowerCase()}. Re-check to use them.`; }
+      W.running = ""; renderView();
+    } catch (err) { if (err?.code === "images_unavailable") { W.running = ""; W.error = "Photos can't be read in this view. Type the information instead."; renderView(); } else fail(err); }
+  } });
+  left.append(h("section", { class: "card stack" }, h("h2", {}, you ? "Add your information" : "Add information"),
+    h("p", { class: "small muted" }, you ? "Type what you know, or add a photo of a medical report. Cover your name and ID number before taking the photo." : "Add facts or a photo of a report. Cover identifiers before photographing."),
+    h("div", { class: "field" }, h("label", { for: "enr-note" }, "Information"), note),
+    h("div", { class: "row" },
+      h("button", { class: "btn", disabled: !!W.running, onclick: async () => {
+        if (!W.note.trim()) return;
+        try { await ctx.addFacts([{ text: W.note.trim().slice(0, 2000), source: "note", at: now() }]); W.note = ""; W.photoMsg = "Saved. Re-check to use it."; renderView(); } catch (err) { fail(err); }
+      } }, "Save information"),
+      h("label", { class: "btn", for: "enr-photo" }, W.running === "photo" ? "Reading photo…" : "Add a photo of a report")),
+    photo, W.photoMsg ? h("p", { class: "small" }, W.photoMsg) : null,
+    ctx.facts.length ? h("details", {}, h("summary", {}, `Saved information (${ctx.facts.length})`), list(ctx.facts.map((f) => f.text))) : null,
+    h("div", { class: "row" }, h("button", { class: "btn primary", disabled: !S.sample || !!W.running, onclick: runCheck }, W.running === "check" ? "Re-checking…" : "Re-check all requirements"))));
+  if (W.error) left.prepend(h("p", { class: "error" }, W.error));
+
+  // Tracker
+  const toggleStep = (k) => saveEnroll(ctx, t.id, { steps: { ...e.steps, [k]: e.steps?.[k] ? null : now() } }).catch(fail);
+  right.append(h("section", { class: "card stack" }, h("h2", {}, "Enrollment steps"),
+    h("ol", { class: "tracker" }, ...STEPS.map(([k, label]) => h("li", { "data-done": String(!!e.steps?.[k]) },
+      h("button", { class: "tick", type: "button", "aria-pressed": String(!!e.steps?.[k]), "aria-label": `Mark "${label}" ${e.steps?.[k] ? "not done" : "done"}`, onclick: () => toggleStep(k) }, e.steps?.[k] ? "✓" : ""),
+      h("span", {}, label, e.steps?.[k] ? h("span", { class: "small muted" }, ` · ${new Date(e.steps[k]).toLocaleDateString()}`) : null))))));
+
+  // Documents
+  const toggleDoc = (k) => saveEnroll(ctx, t.id, { docs: { ...e.docs, [k]: !e.docs?.[k] } }).catch(fail);
+  right.append(h("section", { class: "card stack" }, h("h2", {}, "Documents to gather"),
+    h("div", { class: "stack", style: "gap:6px" }, ...DOCS.map(([k, label]) => h("label", { class: "row small", style: "gap:8px;align-items:flex-start" },
+      h("input", { type: "checkbox", checked: !!e.docs?.[k], onchange: () => toggleDoc(k) }), h("span", {}, label)))),
+    e.check?.documents?.length ? h("div", {}, h("div", { class: "label" }, "This study may also ask for"), list(e.check.documents)) : null));
+
+  // Contact the study team
+  const sites = proximity(t, ctx.country).sites.slice(0, 4);
+  const contact = t.contact ? [t.contact.name, t.contact.phone, t.contact.email].filter(Boolean) : [];
+  const letterBox = e.letter ? h("textarea", { id: "letter", readonly: true, style: "min-height:220px;font-size:.86rem" }) : null;
+  if (letterBox) letterBox.value = `${e.letter.subject}\n\n${e.letter.body}`;
+  const copyMsg = h("span", { class: "small muted" });
+  right.append(h("section", { class: "card stack" }, h("h2", {}, "Contact the study team"),
+    sites.length ? h("div", {}, h("div", { class: "label" }, "Closest recruiting sites"), list(sites.map((x) => x.filter(Boolean).join(", ")))) : null,
+    contact.length ? h("div", {}, h("div", { class: "label" }, "Study contact"), ...contact.map((c) => h("p", { class: "small mono", style: "user-select:all" }, c))) : h("p", { class: "small muted" }, "No central contact is listed. Use the site details on ClinicalTrials.gov."),
+    letterBox,
+    h("div", { class: "row" },
+      h("button", { class: e.letter ? "btn" : "btn primary", disabled: !S.sample || !!W.running, onclick: async () => {
+        W.running = "letter"; W.error = ""; renderView();
+        try { const letter = await draftLetter(ctx, t, e, sites[0]); await saveEnroll(ctx, t.id, { letter }); W.running = ""; renderView(); } catch (err) { fail(err); }
+      } }, W.running === "letter" ? "Writing…" : e.letter ? "Rewrite message" : "Draft a message to the study team"),
+      letterBox ? h("button", { class: "btn", onclick: async () => {
+        try { await navigator.clipboard.writeText(letterBox.value); copyMsg.textContent = "Copied."; } catch { letterBox.select(); copyMsg.textContent = "Selected. Press Ctrl+C or ⌘+C to copy."; }
+      } }, "Copy") : null, copyMsg),
+    h("p", { class: "small muted" }, you ? "Show the message to your oncologist before sending it." : "Review before sending. It contains no names or ID numbers.")));
+  if (e.check?.questions?.length) right.append(h("section", { class: "card stack" }, h("h2", {}, "Questions for the screening visit"), list(e.check.questions)));
+
+  wrap.append(h("div", { class: "split" }, left, right),
+    h("p", { class: "small muted" }, "The study team decides who can enroll, after its own screening. Eligo's check helps you prepare; it is not a medical decision."));
+  return wrap;
+}
+
 /* ---------------- routing & shell ---------------- */
 function route() {
   const raw = (location.hash || "#home").slice(1);
   if (raw.startsWith("patient-")) return { name: "patient", id: raw.slice(8) };
   if (raw.startsWith("board-")) return { name: "board", id: raw.slice(6) };
+  if (raw.startsWith("enroll-")) { const rest = raw.slice(7), i = rest.lastIndexOf("-"); return { name: "enroll", owner: rest.slice(0, i), trial: rest.slice(i + 1) }; }
   return { name: ["home", "match", "patients", "boards", "settings", "profile", "trials", "mytrials"].includes(raw) ? raw : "home" };
 }
 const go = (hash) => { if (location.hash !== "#" + hash) location.hash = hash; else renderView(); };
-const section = (r) => r.name === "patient" ? "patients" : r.name === "board" ? "boards" : r.name;
+const section = (r) => r.name === "patient" ? "patients" : r.name === "board" ? "boards" : r.name === "enroll" ? (r.owner === "me" ? "mytrials" : "patients") : r.name;
 
 function renderShell() {
   const foot = $("#foot"); if (foot) foot.textContent = `Eligo · decision support for oncologists, not medical advice · trial data from ClinicalTrials.gov${S.snapshotDate ? `, retrieved ${S.snapshotDate}` : ""}`;
@@ -521,7 +796,8 @@ function renderView(fromData = false) {
   else if (!S.profile || r.name === "profile") node = viewProfile();
   else if (isPatient() && CLINICAL_ROUTES.has(r.name)) node = h("div", { class: "view" }, head("For clinical teams", "This part of Eligo is for doctors and clinical-trial staff."),
     h("div", { class: "card stack" }, h("p", {}, "Your trial matches and next steps are under My trials."), h("a", { class: "btn primary", href: "#mytrials", style: "align-self:flex-start" }, "Go to My trials")));
-  else node = { home: viewHome, match: viewMatch, patients: viewPatients, patient: viewPatient, boards: viewBoards, board: viewBoard, trials: viewTrials, mytrials: viewMyTrials }[r.name](r);
+  else if (r.name === "enroll" && isPatient() && r.owner !== "me") node = viewMyTrials();
+  else node = { home: viewHome, match: viewMatch, patients: viewPatients, patient: viewPatient, boards: viewBoards, board: viewBoard, trials: viewTrials, mytrials: viewMyTrials, enroll: viewEnroll }[r.name](r);
   view.replaceChildren(node);
   if (focusedId) { const el = document.getElementById(focusedId); if (el) { el.focus({ preventScroll: true }); if (sel && "setSelectionRange" in el) try { el.setSelectionRange(...sel); } catch {} } }
   if (fromData) window.scrollTo(0, scroll);
@@ -617,6 +893,8 @@ function homePatient() {
       ...M.matches.slice(0, 3).map((m) => { const t = S.byId.get(m.id); return h("div", { class: "stack", style: "gap:2px;padding-top:8px;border-top:1px solid var(--line)" },
         h("div", { class: "row" }, h("span", { class: "pill", "data-tone": m.fit }, m.fit), h("span", { class: "chip" }, PROX_LABEL[m.proximity]?.replace("patient's", "your") || "")),
         h("span", { style: "font-weight:500" }, t?.title || m.id), m.plain_summary ? h("span", { class: "small muted" }, m.plain_summary) : null); })));
+    const mine = Object.values(S.myEnroll);
+    if (mine.length) blocks.unshift(h("section", { class: "card stack" }, h("h2", {}, "Your enrollments"), enrollmentList("me", mine)));
     if (M.checklist?.length) blocks.push(h("section", { class: "card stack" }, h("h2", {}, "Your next steps"), list(M.checklist.slice(0, 5))));
   } else {
     blocks.push(h("section", { class: "card stack" }, h("h2", {}, "Find trials for your diagnosis"),
@@ -698,7 +976,7 @@ function viewMyTrials() {
     h("p", { class: "muted small" }, "Usually 30 to 90 seconds.")));
   if (M.error) wrap.append(h("p", { class: M.error === "Stopped." ? "muted" : "error" }, M.error));
   if (M.result) wrap.append(...resultBlocks(M.result, "self"));
-  else if (S.myMatch) wrap.append(h("p", { class: "small muted" }, `Saved ${ago(S.myMatch.matched_at)}.`), ...resultBlocks(S.myMatch, "self-saved"));
+  else if (S.myMatch) wrap.append(h("p", { class: "small muted" }, `Saved ${ago(S.myMatch.matched_at)}. Choose Start enrollment on a trial to check every requirement and get help enrolling.`), ...resultBlocks(S.myMatch, "self-saved", "me"));
   return wrap;
 }
 
@@ -784,7 +1062,7 @@ function caseFacts(c) {
     ["Language", c.language || "Unknown"], ["Missing", arr(c.missing_info).join(", ") || "Nothing major"]];
   return h("dl", { class: "facts" }, ...rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, String(v ?? ""))]));
 }
-function trialCard(m) {
+function trialCard(m, owner) {
   const t = S.byId.get(m.id);
   const title = t?.title || m.id;
   const p = t ? proximity(t, null) : null;
@@ -804,9 +1082,15 @@ function trialCard(m) {
         h("div", {}, h("div", { class: "label" }, "Doctor should confirm"), list(m.to_confirm)),
         t ? h("div", {}, h("div", { class: "label" }, "Sites"), list(sites.slice(0, 8).map((s) => s.filter(Boolean).join(", ")))) : null,
         contact ? h("div", {}, h("div", { class: "label" }, "Trial contact"), h("p", { class: "small" }, contact)) : null)),
-    h("a", { href: `https://clinicaltrials.gov/study/${encodeURIComponent(m.id)}`, target: "_blank", rel: "noopener", class: "small" }, "Open on ClinicalTrials.gov ↗"));
+    h("div", { class: "row", style: "justify-content:space-between" },
+      h("a", { href: `https://clinicaltrials.gov/study/${encodeURIComponent(m.id)}`, target: "_blank", rel: "noopener", class: "small" }, "Open on ClinicalTrials.gov ↗"),
+      owner && m.fit !== "unlikely" || owner && enrollmentFor(owner, m.id) ? enrollButton(owner, m.id) : null));
 }
-function resultBlocks(R, mode) {
+function enrollButton(owner, trialId) {
+  const e = enrollmentFor(owner, trialId);
+  return h("a", { class: e ? "btn" : "btn primary", href: `#enroll-${owner}-${trialId}` }, e ? `Continue enrollment · ${stepLabel(e)}` : "Start enrollment");
+}
+function resultBlocks(R, mode, owner = null) {
   const out = [];
   const forSelf = mode === "self" || mode === "self-saved";
   if (mode === "self") {
@@ -836,7 +1120,7 @@ function resultBlocks(R, mode) {
   if (R.case.is_cancer_case === false) { out.push(h("p", {}, "This doesn't read as a cancer case, so no trials were checked.")); return out; }
   if (!R.matches.length) { out.push(h("div", { class: "card empty" }, h("p", {}, "No trial in this snapshot fits this case. Eligo's full engine also searches trials worldwide."))); return out; }
   if (R.message) out.push(h("h2", {}, forSelf ? "For you and your family" : "For the patient and family"), h("div", { class: "card" }, h("p", { style: "font-size:1.02rem" }, R.message)));
-  out.push(h("h2", {}, `${forSelf ? "Trials to ask your doctor about" : "Trials to discuss"} (${R.matches.length})`), ...R.matches.map(trialCard),
+  out.push(h("h2", {}, `${forSelf ? "Trials to ask your doctor about" : "Trials to discuss"} (${R.matches.length})`), ...R.matches.map((m) => trialCard(m, owner)),
     h("div", { class: "grid-2" },
       h("div", { class: "card stack" }, h("h3", {}, forSelf ? "Questions to ask your oncologist" : "Questions for the oncologist"), list(R.questions)),
       h("div", { class: "card stack" }, h("h3", {}, "Before enrolling"), list(R.checklist))));
@@ -871,6 +1155,7 @@ function viewPatient(r) {
     const boards = S.boards.filter((b) => b.patient_id === p.id);
     const R = { text: p.text, case: p.case || {}, matches: p.matches || [], message: p.message, questions: p.questions, checklist: p.checklist };
     const resultsMode = null;
+    const enrolls = S.enrollments.filter((e) => e.patient_id === p.id);
     const rerun = h("button", { class: "btn", disabled: !S.sample, onclick: () => { S.match = { ...S.match, text: p.text, result: null, error: "", forPatient: p.id }; S.drafts.alias = p.alias; go("match"); } }, ic("match"), "Re-run matching");
     const toBoard = h("button", { class: "btn primary", disabled: !S.canWrite, onclick: () => { S.drafts.newBoardFor = p.id; renderView(); setTimeout(() => $("#question")?.focus(), 0); } }, ic("boards"), "Ask a tumor board");
     const del = h("button", { class: "btn danger ghost", disabled: !S.canWrite, onclick: () => { S.drafts.confirmDelete = p.id; renderView(); } }, "Delete");
@@ -882,7 +1167,8 @@ function viewPatient(r) {
         h("button", { class: "btn primary", onclick: async () => { try { await S.db.collection("patients").doc(p.id).delete(); S.drafts.confirmDelete = null; go("patients"); } catch (e) { alertInline(box, dbFail(e)); } } }, "Delete"))));
     if (S.drafts.newBoardFor === p.id) box.append(newBoardForm(p));
     if (boards.length) box.append(h("h2", {}, "Tumor boards"), ...boards.map(boardRow));
-    box.append(...resultBlocks(R, resultsMode),
+    if (enrolls.length) box.append(h("h2", {}, "Enrollments"), enrollmentList(p.id, enrolls));
+    box.append(...resultBlocks(R, resultsMode, p.id),
       h("details", { class: "card" }, h("summary", {}, "Original summary"), h("p", { style: "white-space:pre-wrap" }, p.text || "")));
     return box;
   }));
@@ -1084,6 +1370,7 @@ renderShell(); renderView();
     sub("patients", db.collection("patients").orderBy("updated_at", "desc"), "patients");
     sub("boards", db.collection("boards").orderBy("created_at", "desc"), "boards");
     sub("opinions", db.collection("opinions").orderBy("created_at", "asc"), "opinions");
+    sub("enrollments", db.collection("enrollments").orderBy("updated_at", "desc"), "enrollments");
     watchMembers(db);
     // Each person's profile and saved matches live in their own private space: nobody else can read it.
     if (S.me?.id) watchMine(db, `data/users/${S.me.id}`);
@@ -1096,7 +1383,8 @@ function watchMine(db, coll) {
   S.myColl = coll;
   db.collection(coll).onSnapshot((snap) => {
     const byId = Object.fromEntries(snap.docs.map((d) => [d.id, d.data()]));
-    S.profile = byId.profile || null; S.myMatch = byId.match || null;
+    S.profile = byId.profile || null; S.myMatch = byId.match || null; S.myFacts = byId.facts?.items || [];
+    S.myEnroll = Object.fromEntries(snap.docs.filter((d) => d.id.startsWith("enroll-")).map((d) => [d.id.slice(7), { id: d.id, ...d.data() }]));
     if (!snap.metadata.fromCache || snap.size) S.profileLoaded = true;
     scheduleRender();
   }, () => { S.profileLoaded = true; scheduleRender(); });
@@ -1120,7 +1408,7 @@ async function bootStandalone() {
   S.sample = key ? P.makeSample(key) : null;
   S.user = P.makeUser(); S.me = await S.user.me();
   const db = P.makeDb(); S.db = db;
-  for (const [key, field, dir] of [["patients", "updated_at", "desc"], ["boards", "created_at", "desc"], ["opinions", "created_at", "asc"]]) {
+  for (const [key, field, dir] of [["patients", "updated_at", "desc"], ["boards", "created_at", "desc"], ["opinions", "created_at", "asc"], ["enrollments", "updated_at", "desc"]]) {
     db.collection(key).orderBy(field, dir).onSnapshot((snap) => {
       S[key] = snap.docs.map((d) => ({ id: d.id, ...d.data() })); S.loaded[key] = true; scheduleRender();
     });
