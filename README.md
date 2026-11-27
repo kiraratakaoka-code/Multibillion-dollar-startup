@@ -66,14 +66,35 @@ The tests use a recorded ClinicalTrials.gov response (`test/fixtures/`) and a fa
 - Contact details and sponsor travel-support info per site.
 - Uploading PDFs and photos of medical records.
 
-## Web version (no API key)
+## Puente web app
 
-Live at https://claude.ai/artifact/Ee8uiZCgqSRLCs2ga4Xgxa (private until shared from its Share menu).
+One app (`web/trial-matcher.html`) with a home page, the trial matcher, patient profiles and remote tumor boards.
+It runs two ways:
 
-`web/trial-matcher.html` is published as a claude.ai artifact. It uses Claude through the viewer's own claude.ai account,
-so it needs no API key. Published pages can't call ClinicalTrials.gov, so it reads `web/trials.json`: a snapshot of every
-recruiting cancer treatment trial with a site in Latin America. Refresh it with:
+| | Inside Claude | Standalone website (GitHub Pages) |
+|---|---|---|
+| Link | https://claude.ai/artifact/Ee8uiZCgqSRLCs2ga4Xgxa (private until shared) | `https://kiraratakaoka-code.github.io/Multibillion-dollar-startup/` once Pages is on |
+| Claude | The viewer's own Claude account | Your Anthropic API key, pasted in the app's Settings (saved only in that browser) |
+| Data | Shared workspace: doctors you share it with see the same patients and boards | Saved in that browser only |
+
+Published pages can't call ClinicalTrials.gov, so the app reads `web/trials.json`: every recruiting cancer
+treatment trial with a site in Latin America.
+
+### Turn on the website (once)
+
+1. On GitHub: **Settings → Pages**.
+2. Under **Build and deployment**, choose **Deploy from a branch**.
+3. Pick the branch (`main` once this is merged) and the **/docs** folder, then **Save**.
+4. After a minute, open `https://kiraratakaoka-code.github.io/Multibillion-dollar-startup/`, go to **Settings** in the app and paste your Anthropic API key.
+
+### Rebuild after changes
 
 ```bash
 bun run snapshot
 ```
+
+```bash
+bun run build:site
+```
+
+`build:site` writes `docs/index.html`, `docs/trials.json` and `docs/standalone.js` (the Anthropic SDK bundled for the browser).

@@ -1,115 +1,227 @@
-<title>Trial Matcher</title>
+<title>Puente</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-  /* Layout: one reading column; input on top, results stack below as the case, the family message, then trial cards. */
+  /* Layout: app shell. Fixed sidebar (desktop) or top bar + bottom tabs (phone); one scrolling content column per view.
+     Palette: chart paper and ink, one surgical-green accent. No gradients. */
   :root {
-    --bg: #f5f6f8; --surface: #ffffff; --fg: #17202a; --muted: #5a6572; --line: #dde2e8;
-    --accent: #1d5f8c; --accent-fg: #ffffff; --accent-soft: #e6eff6;
-    --likely: #1f7a4d; --possible: #9a6400; --unlikely: #7a828c; --danger: #b3261e;
-    --warn-bg: #fff5dc; --warn-fg: #5e4500;
-    --font-display: "IBM Plex Serif", Georgia, serif;
-    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --bg: #f2f4f3; --surface: #ffffff; --surface-2: #f6f8f7; --fg: #0f1714; --muted: #57635e; --line: #dde3e0;
+    --accent: #0b6b57; --accent-fg: #ffffff; --accent-soft: #e2f0eb; --accent-ink: #08503f;
+    --likely: #17784a; --likely-soft: #e3f4ea; --possible: #9a6200; --possible-soft: #fbf0dc;
+    --unlikely: #6b7570; --unlikely-soft: #eceeed; --danger: #b42318; --warn-bg: #fff6e0; --warn-fg: #5c4300;
+    --hero-bg: #0f1714; --hero-fg: #eef3f1; --hero-muted: #a9b7b1; --hero-line: #2a3631;
+    --shadow: 0 1px 2px rgba(15, 23, 20, .05);
+    --font-display: "Bricolage Grotesque", "Inter", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
     --font-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+    --sidebar: 232px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #12161b; --surface: #1a2027; --fg: #e8ecf0; --muted: #9aa5b1; --line: #2c343d;
-      --accent: #7db4dc; --accent-fg: #0d1a24; --accent-soft: #1c2b38;
-      --likely: #5cc28f; --possible: #e0ad4a; --unlikely: #8f98a2; --danger: #f2877e;
-      --warn-bg: #3a2f14; --warn-fg: #f0d58a; color-scheme: dark;
+      --bg: #0c1110; --surface: #141b19; --surface-2: #19221f; --fg: #e7eeeb; --muted: #97a59f; --line: #25302c;
+      --accent: #5fc4a6; --accent-fg: #06201a; --accent-soft: #163029; --accent-ink: #a6e3d0;
+      --likely: #57c08b; --likely-soft: #16302a; --possible: #e3ad4c; --possible-soft: #33291a;
+      --unlikely: #94a09b; --unlikely-soft: #202826; --danger: #f28b82; --warn-bg: #3a2f14; --warn-fg: #f0d58a;
+      --hero-bg: #141b19; --hero-fg: #eef3f1; --hero-muted: #a9b7b1; --hero-line: #2a3631;
+      --shadow: none; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #12161b; --surface: #1a2027; --fg: #e8ecf0; --muted: #9aa5b1; --line: #2c343d;
-    --accent: #7db4dc; --accent-fg: #0d1a24; --accent-soft: #1c2b38;
-    --likely: #5cc28f; --possible: #e0ad4a; --unlikely: #8f98a2; --danger: #f2877e;
-    --warn-bg: #3a2f14; --warn-fg: #f0d58a; color-scheme: dark;
+    --bg: #0c1110; --surface: #141b19; --surface-2: #19221f; --fg: #e7eeeb; --muted: #97a59f; --line: #25302c;
+    --accent: #5fc4a6; --accent-fg: #06201a; --accent-soft: #163029; --accent-ink: #a6e3d0;
+    --likely: #57c08b; --likely-soft: #16302a; --possible: #e3ad4c; --possible-soft: #33291a;
+    --unlikely: #94a09b; --unlikely-soft: #202826; --danger: #f28b82; --warn-bg: #3a2f14; --warn-fg: #f0d58a;
+    --hero-bg: #141b19; --hero-fg: #eef3f1; --hero-muted: #a9b7b1; --hero-line: #2a3631;
+    --shadow: none; color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--font-body); }
-  .wrap { max-width: 820px; margin: 0 auto; padding-block: 32px 64px;
-    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
-    display: flex; flex-direction: column; gap: 20px; }
-  h1 { font: 600 2rem/1.15 var(--font-display); margin: 0; text-wrap: balance; }
-  h2 { font: 600 1.2rem/1.3 var(--font-display); margin: 8px 0 0; }
+  html, body { min-height: 100%; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); }
+  h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+  h1 { font-size: 1.75rem; font-weight: 800; line-height: 1.15; }
+  h2 { font-size: 1.15rem; font-weight: 700; }
+  h3 { font-size: 1rem; font-weight: 700; }
   p { margin: 0; }
-  .lede { color: var(--muted); max-width: 62ch; }
-  .meta { font: 0.85rem/1.4 var(--font-mono); color: var(--muted); }
-  .warn { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 10px 14px; font-size: .92rem; }
-  textarea { width: 100%; min-height: 170px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px;
-    background: var(--surface); color: var(--fg); font: inherit; resize: vertical; }
-  textarea:focus-visible, button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  a { color: var(--accent); }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Shell */
+  .app { display: grid; grid-template-columns: var(--sidebar) minmax(0, 1fr); min-height: 100vh; }
+  .side { position: sticky; top: 0; height: 100vh; border-right: 1px solid var(--line); background: var(--surface);
+    padding: 20px 14px; display: flex; flex-direction: column; gap: 22px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--fg); padding: 0 8px; }
+  .brand b { font: 800 1.25rem var(--font-display); letter-spacing: -0.02em; }
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; color: var(--muted); text-decoration: none; font-weight: 500; }
+  .nav a:hover { background: var(--surface-2); color: var(--fg); }
+  .nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-ink); }
+  .nav svg { width: 18px; height: 18px; flex: none; }
+  .nav .count { margin-left: auto; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .side .me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 8px; font-size: .9rem; color: var(--muted); }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex: none; background: var(--surface-2); }
+  .topbar, .tabs { display: none; }
+  main { min-width: 0; }
+  .view { max-width: 980px; margin: 0 auto; padding-block: 28px 80px;
+    padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
+    display: flex; flex-direction: column; gap: 22px; }
+  .view-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .view-head .sub { color: var(--muted); margin-top: 4px; max-width: 62ch; }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .side { display: none; }
+    body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+    .topbar { display: flex; align-items: center; justify-content: space-between; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+      background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 10px;
+      padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; inset: auto 0 0 0; z-index: 5; background: var(--surface);
+      border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+    .tabs a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; font-size: .72rem; color: var(--muted); text-decoration: none; }
+    .tabs a[aria-current="page"] { color: var(--accent); }
+    .tabs svg { width: 20px; height: 20px; }
+    .view { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 110px; }
+    h1 { font-size: 1.45rem; }
+  }
+
+  /* Building blocks */
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); min-width: 0; }
+  .stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
   .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  button { font: inherit; border-radius: 8px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
-  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
-  button:disabled { opacity: .55; cursor: not-allowed; }
-  .label { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-  .steps { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
-  .steps li { color: var(--muted); }
-  .steps li[data-state="active"] { color: var(--fg); font-weight: 500; }
-  .steps li[data-state="active"]::before { content: "● "; color: var(--accent); }
-  .steps li[data-state="done"]::before { content: "✓ "; color: var(--likely); }
-  .steps li[data-state="todo"]::before { content: "○ "; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .label { font-size: .75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+  .muted { color: var(--muted); }
+  .small { font-size: .87rem; }
+  .mono { font-family: var(--font-mono); font-size: .82rem; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 9px; padding: 9px 15px; cursor: pointer; border: 1px solid var(--line);
+    background: var(--surface); color: var(--fg); font-weight: 500; text-decoration: none; white-space: nowrap; }
+  .btn:hover { background: var(--surface-2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.07); }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--accent); padding-inline: 8px; }
+  .btn.danger { color: var(--danger); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn svg { width: 16px; height: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field label { font-weight: 600; font-size: .9rem; }
+  input[type="text"], textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+  textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
+  .notice { background: var(--warn-bg); color: var(--warn-fg); border-radius: 10px; padding: 10px 14px; font-size: .9rem; }
   .error { color: var(--danger); }
-  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
-  dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0; }
-  dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
-  .message { font-size: 1.05rem; }
-  .trials { display: flex; flex-direction: column; gap: 12px; }
-  .trial { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--unlikely); border-radius: 10px; padding: 14px 16px;
-    display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: .75rem; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+    background: var(--unlikely-soft); color: var(--unlikely); text-transform: uppercase; letter-spacing: .05em; }
+  .pill[data-tone="likely"], .pill[data-tone="open"] { background: var(--likely-soft); color: var(--likely); }
+  .pill[data-tone="possible"] { background: var(--possible-soft); color: var(--possible); }
+  .chip { font-size: .78rem; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  dl.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 18px; margin: 0; }
+  dl.facts dt { color: var(--muted); font-size: .9rem; } dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+  ul.list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
+  .empty { text-align: center; padding: 40px 18px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .empty svg { width: 40px; height: 40px; color: var(--muted); }
+  .empty p { max-width: 44ch; color: var(--muted); }
+  details summary { cursor: pointer; color: var(--accent); font-weight: 500; }
+  details[open] summary { margin-bottom: 8px; }
+  .clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; transition: border-color .15s; }
+  .clickable:hover { border-color: var(--accent); }
+
+  /* Home */
+  .hero { border-radius: 14px; padding: 36px; color: var(--hero-fg); background: var(--hero-bg);
+    display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 32px; align-items: center; }
+  .hero .copy { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .hero h1 { font-size: 2.5rem; line-height: 1.05; max-width: 15ch; color: var(--hero-fg); font-weight: 800; }
+  .hero p { max-width: 52ch; color: var(--hero-muted); font-size: 1.02rem; }
+  .hero .kicker { font: 500 .78rem var(--font-mono); color: var(--hero-muted); letter-spacing: .04em; }
+  .hero .btn { border-color: var(--hero-line); background: transparent; color: var(--hero-fg); }
+  .hero .btn:hover { background: var(--hero-line); }
+  .hero .btn.primary { background: var(--hero-fg); color: var(--hero-bg); border-color: var(--hero-fg); }
+  .demo { background: var(--surface); color: var(--fg); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px;
+    border: 1px solid var(--hero-line); min-width: 0; }
+  .demo p { color: var(--fg); }
+  .demo p.muted { color: var(--muted); }
+  .demo .quote { font-size: .88rem; color: var(--muted); border-left: 2px solid var(--line); padding-left: 10px; font-style: italic; }
+  .demo .trial { padding: 12px; border: 1px solid var(--line); border-radius: 8px; box-shadow: none; }
+  .facts-line { display: flex; flex-wrap: wrap; gap: 6px 28px; padding: 14px 0; border-block: 1px solid var(--line); }
+  .facts-line div { display: flex; align-items: baseline; gap: 8px; }
+  .facts-line b { font: 700 1.25rem var(--font-display); font-variant-numeric: tabular-nums; }
+  @media (max-width: 900px) { .hero { grid-template-columns: minmax(0, 1fr); padding: 26px 20px; } .hero h1 { font-size: 1.9rem; } }
+  .pillar { display: flex; flex-direction: column; gap: 10px; }
+  .pillar .ic { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+  .pillar .ic svg { width: 20px; height: 20px; }
+  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; counter-reset: step; }
+  .flow > div { padding: 16px 18px; border-left: 2px solid var(--line); counter-increment: step; }
+  .flow > div::before { content: counter(step); font: 800 .8rem var(--font-display); color: var(--accent); display: block; margin-bottom: 4px; }
+
+  /* Trials */
+  .trial { border-left: 4px solid var(--unlikely); display: flex; flex-direction: column; gap: 9px; }
   .trial[data-fit="likely"] { border-left-color: var(--likely); }
   .trial[data-fit="possible"] { border-left-color: var(--possible); }
-  .badges { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-  .fit { font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: 999px; color: var(--bg); background: var(--unlikely); }
-  .fit[data-fit="likely"] { background: var(--likely); }
-  .fit[data-fit="possible"] { background: var(--possible); }
-  .chip { font-size: .8rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
-  .nct { font: 500 .85rem var(--font-mono); }
-  .trial-title { font-weight: 600; }
-  details summary { cursor: pointer; color: var(--accent); }
-  details > div { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
-  ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
-  a { color: var(--accent); }
-  .muted { color: var(--muted); }
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  .trial .t-title { font-weight: 600; }
+  .steps { display: flex; flex-direction: column; gap: 6px; }
+  .steps div { color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .steps div[data-state="active"] { color: var(--fg); font-weight: 500; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--line); flex: none; }
+  .steps div[data-state="active"] .dot { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+  .steps div[data-state="done"] .dot { background: var(--likely); }
+  @keyframes pulse { 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) { .steps div[data-state="active"] .dot { animation: none; } .clickable { transition: none; } }
+
+  /* Tumor board */
+  .opinion { display: flex; gap: 12px; align-items: flex-start; }
+  .opinion .body { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
+  .opinion .who { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+  .opinion .who b { font-weight: 600; }
+  .brief { background: var(--accent-soft); border: 1px solid transparent; }
+  .split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .split { grid-template-columns: minmax(0, 1fr); } }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  tr.rowlink { cursor: pointer; } tr.rowlink:hover td { background: var(--surface-2); }
 </style>
 
-<main class="wrap">
-  <header class="row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-    <h1>Trial Matcher</h1>
-    <p class="lede">Paste a cancer patient's summary in any language. Claude reads it, finds recruiting treatment trials with sites in Latin America, and explains them in the patient's own language.</p>
-    <p class="meta" id="snapshot">Loading trials…</p>
-  </header>
+<div class="app">
+  <aside class="side">
+    <a class="brand" href="#home" aria-label="Puente home">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 22c3.5-8 18.5-8 22 0" stroke="var(--accent-fg)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M9 22v-4M16 22v-6M23 22v-4" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round"/></svg>
+      <b>Puente</b>
+    </a>
+    <nav class="nav" id="side-nav"></nav>
+    <div class="me" id="me-box"></div>
+  </aside>
 
-  <p class="warn"><strong>Prototype.</strong> Use fictional or de-identified cases only, never real names or ID numbers. This is not medical advice: a treating oncologist must confirm every match.</p>
-
-  <section class="row" style="flex-direction: column; align-items: stretch; gap: 10px;">
-    <label class="label" for="case-text">Patient summary</label>
-    <textarea id="case-text" placeholder="Example: Mujer de 58 años de Asunción, Paraguay, con cáncer de pulmón estadio IV, mutación EGFR…"></textarea>
-    <div class="row">
-      <button class="primary" id="go" disabled>Find trials</button>
-      <button id="stop" hidden>Stop</button>
-      <span class="muted">Samples:</span>
-      <button data-sample="es">Spanish · lung</button>
-      <button data-sample="pt">Portuguese · breast</button>
-      <button data-sample="en">English · colorectal</button>
-    </div>
-    <p id="unavailable" class="muted" hidden>Matching uses Claude and works when this page is opened in Claude (claude.ai or the Claude app).</p>
-  </section>
-
-  <ol class="steps" id="steps" hidden>
-    <li data-step="read">Reading the case and shortlisting trials</li>
-    <li data-step="assess">Checking each trial's eligibility criteria</li>
-  </ol>
-  <p id="status" aria-live="polite"></p>
-
-  <section id="results" hidden></section>
-</main>
+  <main>
+    <header class="topbar">
+      <a class="brand" href="#home">
+        <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 22c3.5-8 18.5-8 22 0" stroke="var(--accent-fg)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M9 22v-4M16 22v-6M23 22v-4" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round"/></svg>
+        <b>Puente</b>
+      </a>
+      <span id="me-top"></span>
+    </header>
+    <div id="view"></div>
+  </main>
+  <nav class="tabs" id="tab-nav"></nav>
+</div>
 
 <script>
+/* ---------------- constants ---------------- */
+const ICONS = {
+  home: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  match: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M8 11h6M11 8v6"/>',
+  patients: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/>',
+  boards: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M7 21h10M12 17v4M7 9h6M7 12h10"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  back: '<path d="M15 18l-6-6 6-6"/>',
+  doc: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/>',
+};
+const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`;
+const NAV = [["home", "Home"], ["match", "Matcher"], ["patients", "Patients"], ["boards", "Tumor boards"]];
 const SAMPLES = {
   es: "Paciente femenina de 58 años, vive en Asunción, Paraguay. Diagnóstico de adenocarcinoma de pulmón (cáncer de pulmón de células no pequeñas) estadio IV con metástasis óseas, diagnosticado hace 14 meses. Mutación EGFR deleción del exón 19. Recibió osimertinib durante 12 meses con progresión de la enfermedad en la última tomografía. ECOG 1. Sin metástasis cerebrales. Hipertensión controlada. Nunca fumó.",
   pt: "Paciente de 46 anos, sexo feminino, mora em Curitiba, Brasil. Câncer de mama HER2 positivo, receptores hormonais negativos, estágio IV com metástases hepáticas. Tratada com trastuzumabe e pertuzumabe com docetaxel na primeira linha e depois trastuzumabe deruxtecan, com progressão. ECOG 0. Função cardíaca normal (FEVE 60%).",
@@ -120,62 +232,74 @@ const REGIONS = {
   "Central America & Caribbean": ["Mexico","Guatemala","Belize","Honduras","El Salvador","Nicaragua","Costa Rica","Panama","Cuba","Dominican Republic","Puerto Rico","Jamaica","Haiti"],
   "North America": ["United States","Canada"],
 };
-const MAX_CANDIDATES = 8;
-const MAX_CRITERIA_CHARS = 12000;
+const SPECIALTIES = ["Medical oncology", "Radiation oncology", "Surgical oncology", "Thoracic surgery", "Pathology", "Radiology", "Hematology", "Pediatric oncology", "Palliative care", "Clinical trials"];
+const MAX_CANDIDATES = 8, MAX_CRITERIA_CHARS = 12000;
+const PROX_LABEL = { same_country: "Sites in patient's country", same_region: "Sites in patient's region", abroad: "Sites in other regions" };
+const FIT_RANK = { likely: 0, possible: 1, unlikely: 2 }, PROX_RANK = { same_country: 0, same_region: 1, abroad: 2 };
 
-const $ = (id) => document.getElementById(id);
-const el = (tag, props = {}, ...kids) => {
-  const n = Object.assign(document.createElement(tag), props);
-  for (const k of kids) if (k != null) n.append(k);
+/* ---------------- tiny DOM helpers ---------------- */
+const $ = (sel, root = document) => root.querySelector(sel);
+function h(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "html") n.innerHTML = v;            // only ever used with our own static icon markup
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (k === "dataset") Object.assign(n.dataset, v);
+    else if (k in n && typeof v !== "string") n[k] = v;
+    else n.setAttribute(k, v);
+  }
+  for (const kid of kids.flat()) if (kid != null && kid !== false) n.append(kid instanceof Node ? kid : String(kid));
   return n;
+}
+const ic = (name) => h("span", { html: icon(name), style: "display:inline-flex" });
+const list = (items) => items?.length ? h("ul", { class: "list" }, items.map((i) => h("li", {}, String(i)))) : h("p", { class: "muted small" }, "None");
+const newId = () => (crypto.randomUUID?.() || Math.random().toString(16).slice(2) + Date.now().toString(16)).replace(/-/g, "").slice(0, 14);
+const now = () => new Date().toISOString();
+function ago(iso) {
+  const s = (Date.now() - Date.parse(iso)) / 1000;
+  if (!isFinite(s)) return "";
+  if (s < 60) return "just now";
+  const m = s / 60; if (m < 60) return `${Math.floor(m)} min ago`;
+  const hr = m / 60; if (hr < 24) return `${Math.floor(hr)} h ago`;
+  const d = hr / 24; if (d < 30) return `${Math.floor(d)} d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+const safeUrl = (u) => typeof u === "string" && /^(https:|data:image\/|\/_blob\/)/.test(u) ? u : "";
+
+/* ---------------- state ---------------- */
+const S = {
+  trials: [], byId: new Map(), snapshotDate: "", countries: 0,
+  db: null, user: null, sample: null, me: null, canWrite: true,
+  patients: [], boards: [], opinions: [], loaded: { patients: false, boards: false, opinions: false }, dbError: "",
+  match: { text: "", running: false, step: "", error: "", result: null, ctl: null, forPatient: null },
+  drafts: {},
 };
-const listOf = (items) => items?.length ? el("ul", {}, ...items.map((i) => el("li", { textContent: String(i) }))) : el("p", { className: "muted", textContent: "None" });
 
-let TRIALS = [], BY_ID = new Map(), sample = null, ctl = null;
-
+/* ---------------- matching (Claude via the viewer's account) ---------------- */
 function regionOf(country) {
   if (!country) return null;
   const c = String(country).trim().toLowerCase();
-  for (const [r, list] of Object.entries(REGIONS)) if (list.some((x) => x.toLowerCase() === c)) return r;
+  for (const [r, l] of Object.entries(REGIONS)) if (l.some((x) => x.toLowerCase() === c)) return r;
   return null;
 }
 function proximity(trial, home) {
-  const h = home?.trim().toLowerCase(), hr = regionOf(home);
-  const rank = (c) => (h && c?.toLowerCase() === h ? 0 : hr && regionOf(c) === hr ? 1 : 2);
+  const hm = home?.trim().toLowerCase(), hr = regionOf(home);
+  const rank = (c) => (hm && c?.toLowerCase() === hm ? 0 : hr && regionOf(c) === hr ? 1 : 2);
   const sites = [...trial.sites].sort((a, b) => rank(a[2]) - rank(b[2]));
-  const best = sites.length ? rank(sites[0][2]) : 2;
-  return { level: ["same_country", "same_region", "abroad"][best], sites, countries: [...new Set(trial.sites.map((s) => s[2]).filter(Boolean))] };
+  return { level: ["same_country", "same_region", "abroad"][sites.length ? rank(sites[0][2]) : 2], sites,
+    countries: [...new Set(trial.sites.map((s) => s[2]).filter(Boolean))] };
 }
-const PROX_LABEL = { same_country: "Sites in your country", same_region: "Sites in your region", abroad: "Sites in other regions" };
-
-function setStep(name) {
-  const order = ["read", "assess"];
-  for (const li of $("steps").children) {
-    const i = order.indexOf(li.dataset.step), cur = order.indexOf(name);
-    li.dataset.state = name === "done" || i < cur ? "done" : i === cur ? "active" : "todo";
-  }
-}
-
-const ERROR_COPY = {
-  not_granted: "Claude isn't allowed on this page. You can allow it from the page's permissions and try again.",
-  sampling_disabled: "Claude isn't available for this account.",
-  rate_limited: "Claude is busy or you've reached a usage limit. Wait a bit, then try again.",
-  session_expired: "Sign in to Claude again, then try again.",
-  refused: "Claude declined this request. Try rewording the summary.",
-  prompt_too_large: "The summary is too long. Shorten it to the key facts.",
-  invalid_json: "Claude's answer came back in the wrong format. Try again.",
-};
-const errorText = (e) => ERROR_COPY[e?.code] || "Something went wrong reaching Claude. Try again.";
-
 function readPrompt(text) {
-  const index = TRIALS.map((t) => `${t.id} | ${t.title} | ${t.conditions.join("; ")} | ${t.phases.join(",") || "-"}`).join("\n");
+  const index = S.trials.map((t) => `${t.id} | ${t.title} | ${t.conditions.join("; ")} | ${t.phases.join(",") || "-"}`).join("\n");
   return `You are a careful clinical trial navigator. Read the patient summary (any language) and do two things.
 
 1. Extract the case. Only state what the text says; use null or [] when it is not stated. Write fields in English except "language", which names the summary's language in English.
-2. From the trial index below (every recruiting cancer treatment trial with a site in Latin America), choose up to ${MAX_CANDIDATES} trials most worth checking for THIS patient: same cancer type and setting, matching biomarkers, fitting the line of therapy. Order best first. Choose none if nothing fits.
+2. From the trial index (every recruiting cancer treatment trial with a site in Latin America), choose up to ${MAX_CANDIDATES} trials most worth checking for THIS patient: same cancer type and setting, matching biomarkers, fitting the line of therapy. Best first. Choose none if nothing fits.
 
-Reply with only JSON in this shape:
-{"case": {"is_cancer_case": true, "language": "Spanish", "summary_en": "two sentences", "cancer_type": "", "stage": null, "biomarkers": [], "prior_treatments": [], "age": null, "sex": "female|male|unknown", "country": null, "city": null, "missing_info": ["facts trials usually require that are not stated"]}, "candidates": ["NCT..."]}
+Reply with only JSON:
+{"case": {"is_cancer_case": true, "language": "Spanish", "summary_en": "two sentences", "cancer_type": "", "stage": null, "biomarkers": [], "prior_treatments": [], "age": null, "sex": "female|male|unknown", "performance_status": null, "country": null, "city": null, "missing_info": ["facts trials usually require that are not stated"]}, "candidates": ["NCT..."]}
 
 <patient_summary>
 ${text}
@@ -185,10 +309,9 @@ ${text}
 ${index}
 </trial_index>`;
 }
-
 function assessPrompt(c, picks) {
   const blocks = picks.map(({ t, p }) => {
-    const crit = t.eligibility.length > MAX_CRITERIA_CHARS ? t.eligibility.slice(0, MAX_CRITERIA_CHARS) + "\n[criteria truncated here; the full list is on ClinicalTrials.gov]" : t.eligibility;
+    const crit = t.eligibility.length > MAX_CRITERIA_CHARS ? t.eligibility.slice(0, MAX_CRITERIA_CHARS) + "\n[criteria truncated here; full list on ClinicalTrials.gov]" : t.eligibility;
     return `<trial id="${t.id}">
 Title: ${t.title}
 Phase: ${t.phases.join(", ") || "not stated"}; interventions: ${t.interventions.join(", ") || "not stated"}
@@ -199,15 +322,15 @@ Eligibility criteria:
 ${crit}
 </trial>`;
   }).join("\n\n");
-  return `You are a careful clinical trial navigator. Judge each trial below for this patient against its eligibility criteria, then explain the options to the patient and family.
+  return `You are a careful clinical trial navigator. Judge each trial for this patient against its eligibility criteria, then explain the options to the patient and family.
 
 Rules:
-- "likely": no criterion clearly excludes the patient and the key inclusion criteria are met. "possible": key facts are missing or a doctor must confirm. "unlikely": a criterion clearly excludes the patient.
+- "likely": no criterion clearly excludes the patient and key inclusion criteria are met. "possible": key facts missing or a doctor must confirm. "unlikely": a criterion clearly excludes the patient.
 - reasons_for, reasons_against and to_confirm are in English and cite the specific criterion.
 - plain_summary, patient_message, questions_for_doctor and enrollment_checklist are in ${c.language || "the patient's language"}, simple enough for a family with no medical training.
 - Never promise a place or a benefit. Say the treating oncologist must confirm eligibility.
-- The enrollment checklist covers what usually blocks people: records and pathology to gather, who pays for travel and routine care (ask the site; many sponsors reimburse travel), insurance, documents for crossing a border, and follow-up back home.
-- Return one assessment for every trial, using its exact id.
+- The enrollment checklist covers what usually blocks people: records and pathology, who pays for travel and routine care (ask the site; many sponsors reimburse travel), insurance, documents for crossing a border, and follow-up back home.
+- One assessment for every trial, using its exact id.
 
 Reply with only JSON:
 {"assessments": [{"id": "NCT...", "fit": "likely|possible|unlikely", "reasons_for": [], "reasons_against": [], "to_confirm": [], "plain_summary": ""}], "patient_message": "", "questions_for_doctor": [], "enrollment_checklist": []}
@@ -220,105 +343,547 @@ ${JSON.stringify(c, null, 2)}
 ${blocks}
 </trials>`;
 }
+const SAMPLE_ERRORS = {
+  not_granted: "Claude isn't allowed on this page yet. Allow it from the page's permissions, then try again.",
+  sampling_disabled: "Claude isn't available for this account.",
+  rate_limited: "Claude is busy or you've hit a usage limit. Wait a little, then try again.",
+  session_expired: "Sign in to Claude again, then try again.",
+  refused: "Claude declined this request. Try rewording it.",
+  prompt_too_large: "That's too long. Shorten it to the key facts.",
+  invalid_json: "Claude's answer came back in the wrong format. Try again.",
+  bad_key: "Your Anthropic API key was rejected. Check it in Settings.",
+  no_credit: "Your Anthropic account has no credit. Add funds at console.anthropic.com, then try again.",
+};
+const sampleError = (e) => SAMPLE_ERRORS[e?.code] || "Couldn't reach Claude. Try again.";
 
-async function run() {
-  const text = $("case-text").value.trim();
-  if (!text) { $("status").textContent = "Paste a patient summary first."; return; }
-  if (text.length > 20000) { $("status").textContent = "The summary is very long. Shorten it to the key facts."; return; }
-  ctl = new AbortController();
-  $("go").disabled = true; $("stop").hidden = false; $("results").hidden = true; $("results").replaceChildren();
-  $("steps").hidden = false; setStep("read");
-  $("status").className = ""; $("status").textContent = "Claude is reading. This usually takes 30 to 90 seconds.";
+async function runMatch() {
+  const M = S.match;
+  const text = M.text.trim();
+  if (!text) { M.error = "Paste a patient summary first."; return renderView(); }
+  if (text.length > 20000) { M.error = "That summary is very long. Shorten it to the key facts."; return renderView(); }
+  M.ctl = new AbortController(); M.running = true; M.error = ""; M.result = null; M.step = "read"; renderView();
   try {
-    const first = await sample.json(readPrompt(text), { signal: ctl.signal });
+    const first = await S.sample.json(readPrompt(text), { signal: M.ctl.signal });
     const c = first?.case;
     if (!c || typeof c !== "object") throw { code: "invalid_json" };
-    if (c.is_cancer_case === false) return renderResults(c, null);
-    const ids = (Array.isArray(first.candidates) ? first.candidates : []).map(String).filter((id) => BY_ID.has(id));
-    const picks = [...new Set(ids)].slice(0, MAX_CANDIDATES).map((id) => { const t = BY_ID.get(id); return { t, p: proximity(t, c.country) }; });
-    if (picks.length === 0) return renderResults(c, { matches: [] });
-
-    setStep("assess");
-    const second = await sample.json(assessPrompt(c, picks), { signal: ctl.signal });
-    const byId = new Map((second?.assessments || []).map((a) => [String(a.id), a]));
-    const FIT = { likely: 0, possible: 1, unlikely: 2 }, PROX = { same_country: 0, same_region: 1, abroad: 2 };
-    const matches = picks
-      .filter(({ t }) => byId.has(t.id))
-      .map(({ t, p }) => ({ t, p, a: byId.get(t.id) }))
-      .sort((x, y) => (FIT[x.a.fit] ?? 3) - (FIT[y.a.fit] ?? 3) || PROX[x.p.level] - PROX[y.p.level]);
-    renderResults(c, { matches, message: second.patient_message, questions: second.questions_for_doctor, checklist: second.enrollment_checklist });
-  } catch (e) {
-    if (e?.code === "cancelled") { $("status").textContent = "Stopped."; }
-    else { $("status").className = "error"; $("status").textContent = errorText(e); }
-  } finally {
-    $("go").disabled = false; $("stop").hidden = true; ctl = null;
-  }
-}
-
-function renderResults(c, r) {
-  setStep("done");
-  $("status").textContent = "";
-  const out = $("results");
-  const caseRows = [
-    ["Summary", c.summary_en], ["Language", c.language], ["Location", [c.city, c.country].filter(Boolean).join(", ") || "Not stated"],
-    ["Cancer", [c.cancer_type, c.stage && `stage ${c.stage}`].filter(Boolean).join(", ")],
-    ["Biomarkers", (c.biomarkers || []).join(", ") || "None stated"], ["Missing", (c.missing_info || []).join(", ") || "Nothing major"],
-  ];
-  const dl = el("dl");
-  for (const [k, v] of caseRows) dl.append(el("dt", { textContent: k }), el("dd", { textContent: String(v ?? "") }));
-  out.append(el("h2", { textContent: "The case" }), el("div", { className: "panel" }, dl));
-
-  if (!r) out.append(el("p", { textContent: "This doesn't look like a cancer case, so no trials were checked." }));
-  else if (!r.matches.length) out.append(el("p", { textContent: "No trial in this snapshot fits this case. The full engine also searches trials worldwide." }));
-  else {
-    if (r.message) out.append(el("h2", { textContent: "For the patient and family" }), el("div", { className: "panel message" }, el("p", { textContent: String(r.message) })));
-    const list = el("div", { className: "trials" });
-    for (const { t, p, a } of r.matches) {
-      const fit = ["likely", "possible", "unlikely"].includes(a.fit) ? a.fit : "possible";
-      const closest = p.sites.slice(0, 3).map((s) => s.filter(Boolean).join(", "));
-      const contact = t.contact ? [t.contact.name, t.contact.phone, t.contact.email].filter(Boolean).join(" · ") : "";
-      list.append(el("article", { className: "trial", dataset: { fit } },
-        el("div", { className: "badges" },
-          el("span", { className: "fit", dataset: { fit }, textContent: fit }),
-          el("span", { className: "chip", textContent: PROX_LABEL[p.level] }),
-          ...t.phases.map((ph) => el("span", { className: "chip", textContent: ph.replace("PHASE", "Phase ") })),
-          el("span", { className: "nct muted", textContent: t.id })),
-        el("div", { className: "trial-title", textContent: t.title }),
-        el("p", { textContent: String(a.plain_summary || "") }),
-        el("p", { className: "muted", textContent: `${t.sites.length} recruiting site${t.sites.length === 1 ? "" : "s"} in ${p.countries.slice(0, 6).join(", ")}${p.countries.length > 6 ? ` and ${p.countries.length - 6} more` : ""}` }),
-        el("details", {},
-          el("summary", { textContent: "Why, and what a doctor should confirm" }),
-          el("div", {},
-            el("strong", { textContent: "For" }), listOf(a.reasons_for),
-            el("strong", { textContent: "Against" }), listOf(a.reasons_against),
-            el("strong", { textContent: "Doctor should confirm" }), listOf(a.to_confirm),
-            el("strong", { textContent: "Closest sites" }), listOf(closest),
-            contact ? el("strong", { textContent: "Trial contact" }) : null,
-            contact ? el("p", { textContent: contact }) : null)),
-        el("a", { href: `https://clinicaltrials.gov/study/${encodeURIComponent(t.id)}`, target: "_blank", rel: "noopener", textContent: "Open on ClinicalTrials.gov" })));
+    let matches = [], second = {};
+    if (c.is_cancer_case !== false) {
+      const ids = [...new Set((Array.isArray(first.candidates) ? first.candidates : []).map(String))].filter((id) => S.byId.has(id)).slice(0, MAX_CANDIDATES);
+      const picks = ids.map((id) => { const t = S.byId.get(id); return { t, p: proximity(t, c.country) }; });
+      if (picks.length) {
+        M.step = "assess"; renderView();
+        second = await S.sample.json(assessPrompt(c, picks), { signal: M.ctl.signal }) || {};
+        const byId = new Map((second.assessments || []).map((a) => [String(a.id), a]));
+        matches = picks.filter(({ t }) => byId.has(t.id)).map(({ t, p }) => {
+          const a = byId.get(t.id);
+          return { id: t.id, fit: ["likely", "possible", "unlikely"].includes(a.fit) ? a.fit : "possible", proximity: p.level,
+            plain_summary: String(a.plain_summary || ""), reasons_for: arr(a.reasons_for), reasons_against: arr(a.reasons_against), to_confirm: arr(a.to_confirm) };
+        }).sort((x, y) => FIT_RANK[x.fit] - FIT_RANK[y.fit] || PROX_RANK[x.proximity] - PROX_RANK[y.proximity]);
+      }
     }
-    out.append(el("h2", { textContent: `Trials to discuss (${r.matches.length})` }), list,
-      el("h2", { textContent: "Questions for the doctor" }), el("div", { className: "panel" }, listOf(r.questions)),
-      el("h2", { textContent: "Before enrolling" }), el("div", { className: "panel" }, listOf(r.checklist)));
+    M.result = { text, case: c, matches, message: String(second.patient_message || ""), questions: arr(second.questions_for_doctor),
+      checklist: arr(second.enrollment_checklist), matched_at: now() };
+  } catch (e) {
+    M.error = e?.code === "cancelled" ? "Stopped." : sampleError(e);
+  } finally {
+    M.running = false; M.step = ""; M.ctl = null; renderView();
   }
-  out.hidden = false;
+}
+const arr = (x) => Array.isArray(x) ? x.map(String) : [];
+
+/* ---------------- data writes ---------------- */
+function dbFail(e) {
+  if (e?.code === "quota_exceeded") return "Storage is full. Delete old patients or boards, then try again.";
+  if (e?.code === "invalid_argument") { S.canWrite = false; return "You can view this workspace but not change it. Ask the owner for Contributor access."; }
+  return "Couldn't save. Check your connection and try again.";
+}
+async function savePatient(alias) {
+  const R = S.match.result; if (!R || !S.db) return;
+  const id = S.match.forPatient || newId();
+  const existing = S.patients.find((p) => p.id === id);
+  const body = { alias: alias.trim().slice(0, 60), text: R.text, case: R.case, matches: R.matches, message: R.message,
+    questions: R.questions, checklist: R.checklist, matched_at: R.matched_at, updated_at: now(),
+    created_at: existing?.created_at || now(), created_by: existing?.created_by || S.me?.id || null };
+  await S.db.collection("patients").doc(id).set(body);
+  S.match = { text: "", running: false, step: "", error: "", result: null, ctl: null, forPatient: null };
+  go(`patient-${id}`);
+}
+async function createBoard(patient, question, specialties) {
+  const id = newId();
+  const body = { patient_id: patient.id, patient_alias: patient.alias, case: patient.case, text: patient.text,
+    matches: (patient.matches || []).map((m) => ({ id: m.id, fit: m.fit })), question: question.trim().slice(0, 2000),
+    specialties, status: "open", created_by: S.me?.id || null, created_at: now(), brief: null, consensus: null };
+  await S.db.collection("boards").doc(id).set(body);
+  go(`board-${id}`);
+  if (S.sample) prepareBrief(id, body).catch(() => {});
+}
+async function prepareBrief(boardId, b) {
+  const trials = (b.matches || []).map((m) => { const t = S.byId.get(m.id); return t ? `${t.id} (${m.fit}): ${t.title}` : null; }).filter(Boolean).join("\n");
+  const brief = await S.sample.json(`You prepare cases for a remote oncology tumor board. Specialists will read your brief before giving written second opinions; the treating oncologist stays responsible for care.
+Write a concise, neutral case brief in English from the record below. Do not recommend a treatment yourself.
+
+Reply with only JSON: {"one_liner": "", "key_facts": [], "treatment_history": [], "open_questions": ["what the board most needs to weigh, including anything missing from the record"]}
+
+<case>${JSON.stringify(b.case)}</case>
+<original_summary>${b.text}</original_summary>
+<question_from_treating_doctor>${b.question}</question_from_treating_doctor>
+<candidate_trials>${trials || "none"}</candidate_trials>`);
+  if (brief && typeof brief === "object") await S.db.collection("boards").doc(boardId).update({ brief: {
+    one_liner: String(brief.one_liner || ""), key_facts: arr(brief.key_facts), treatment_history: arr(brief.treatment_history), open_questions: arr(brief.open_questions) } });
+}
+async function addOpinion(board, draft) {
+  await S.db.collection("opinions").doc(newId()).set({ board_id: board.id, author: S.me?.id || null, specialty: draft.specialty,
+    recommendation: draft.recommendation.trim().slice(0, 6000), trials_view: draft.trials.trim().slice(0, 2000), created_at: now() });
+}
+async function summarizeBoard(board, ops) {
+  const text = ops.map((o, i) => `Opinion ${i + 1} (${o.specialty}):\n${o.recommendation}${o.trials_view ? `\nOn trials: ${o.trials_view}` : ""}`).join("\n\n");
+  const c = await S.sample.json(`Summarize these written tumor board opinions for the treating oncologist. Be faithful to what the specialists wrote; add no recommendation of your own.
+Reply with only JSON: {"agreement": ["points most opinions share"], "disagreement": ["where they differ, and who said what by specialty"], "next_steps": ["concrete actions the opinions call for"]}
+
+<question>${board.question}</question>
+<opinions>
+${text}
+</opinions>`, { cache: false });
+  await S.db.collection("boards").doc(board.id).update({ consensus: { agreement: arr(c?.agreement), disagreement: arr(c?.disagreement), next_steps: arr(c?.next_steps), opinion_count: ops.length, at: now() } });
 }
 
-document.querySelectorAll("[data-sample]").forEach((b) => b.addEventListener("click", () => { $("case-text").value = SAMPLES[b.dataset.sample]; }));
-$("go").addEventListener("click", run);
-$("stop").addEventListener("click", () => ctl?.abort());
+/* ---------------- routing & shell ---------------- */
+function route() {
+  const raw = (location.hash || "#home").slice(1);
+  if (raw.startsWith("patient-")) return { name: "patient", id: raw.slice(8) };
+  if (raw.startsWith("board-")) return { name: "board", id: raw.slice(6) };
+  return { name: ["home", "match", "patients", "boards", "settings"].includes(raw) ? raw : "home" };
+}
+const go = (hash) => { if (location.hash !== "#" + hash) location.hash = hash; else renderView(); };
+const section = (r) => r.name === "patient" ? "patients" : r.name === "board" ? "boards" : r.name;
+
+function renderShell() {
+  const cur = section(route());
+  const counts = { patients: S.patients.length, boards: S.boards.filter((b) => b.status === "open").length };
+  $("#side-nav").replaceChildren(...NAV.map(([k, label]) => h("a", { href: `#${k}`, "aria-current": cur === k ? "page" : null },
+    ic(k), label, counts[k] ? h("span", { class: "count" }, String(counts[k])) : null)));
+  $("#tab-nav").replaceChildren(...NAV.map(([k, label]) => h("a", { href: `#${k}`, "aria-current": cur === k ? "page" : null }, ic(k), label.replace("Tumor boards", "Boards"))));
+  const me = S.me;
+  const settings = S.standalone ? h("a", { href: "#settings", class: "btn ghost", "aria-current": cur === "settings" ? "page" : null }, "Settings") : null;
+  const meEl = () => me?.id ? [h("img", { class: "avatar", src: safeUrl(me.avatarUrl), alt: "" }), h("span", {}, me.name || "You")] : [h("span", { class: "small" }, "Viewing")];
+  $("#me-box").replaceChildren(...meEl(), settings || "");
+  $("#me-top").replaceChildren(...(S.standalone ? [h("a", { href: "#settings", class: "btn ghost" }, "Settings")] : me?.id ? [h("img", { class: "avatar", src: safeUrl(me.avatarUrl), alt: me.name || "You" })] : []));
+}
+
+let pending = false;
+function scheduleRender() { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; renderShell(); renderView(true); }); }
+
+function renderView(fromData = false) {
+  const r = route();
+  // Views with forms keep their own inputs: on a data refresh, only re-render views without unsaved input in focus.
+  const view = $("#view");
+  const active = document.activeElement;
+  const focusedId = active && view.contains(active) && active.id ? active.id : null;
+  const sel = focusedId && "selectionStart" in active ? [active.selectionStart, active.selectionEnd] : null;
+  const scroll = fromData ? window.scrollY : 0;
+  const node = { home: viewHome, match: viewMatch, patients: viewPatients, patient: viewPatient, boards: viewBoards, board: viewBoard, settings: viewSettings }[r.name](r);
+  view.replaceChildren(node);
+  if (focusedId) { const el = document.getElementById(focusedId); if (el) { el.focus({ preventScroll: true }); if (sel && "setSelectionRange" in el) try { el.setSelectionRange(...sel); } catch {} } }
+  if (fromData) window.scrollTo(0, scroll);
+}
+window.addEventListener("hashchange", () => { renderShell(); renderView(); window.scrollTo(0, 0); });
+
+/* ---------------- views ---------------- */
+function head(title, sub, ...actions) {
+  return h("div", { class: "view-head" }, h("div", {}, h("h1", {}, title), sub ? h("p", { class: "sub" }, sub) : null), actions.length ? h("div", { class: "row" }, actions) : null);
+}
+function loadingOr(key, fn) {
+  if (S.dbError) return h("p", { class: "error" }, S.dbError);
+  if (!S.db) return h("div", { class: "card empty" }, h("p", {}, "Saved patients and tumor boards are available when this app is opened in Claude while signed in."));
+  if (!S.loaded[key]) return h("p", { class: "muted" }, "Loading…");
+  return fn();
+}
+
+function viewHome() {
+  const open = S.boards.filter((b) => b.status === "open");
+  return h("div", { class: "view" },
+    h("section", { class: "hero" },
+      h("div", { class: "copy" },
+        h("span", { class: "kicker" }, "CANCER TRIAL ACCESS · LATIN AMERICA"),
+        h("h1", {}, "The trial that could help is often one bus ride away."),
+        h("p", {}, "Puente reads a patient's records in any language, checks recruiting trials against their eligibility criteria, explains the options to the family in their own language, and puts hard cases in front of specialists through remote tumor boards."),
+        h("div", { class: "row" }, h("a", { class: "btn primary", href: "#match" }, "Match a patient"), h("a", { class: "btn", href: "#boards" }, "Open tumor boards"))),
+      h("div", { class: "demo", "aria-label": "Example result" },
+        h("div", { class: "row", style: "justify-content:space-between" }, h("span", { class: "label" }, "Example"), h("span", { class: "mono muted" }, "Asunción → São Paulo")),
+        h("p", { class: "quote" }, "“Mujer de 58 años, adenocarcinoma de pulmón estadio IV, EGFR exón 19, progresión con osimertinib…”"),
+        h("div", { class: "trial", "data-fit": "possible" },
+          h("div", { class: "row" }, h("span", { class: "pill", "data-tone": "possible" }, "possible"), h("span", { class: "chip" }, "Sites in patient's region"), h("span", { class: "chip" }, "Phase 3")),
+          h("div", { class: "t-title small" }, "EGFR-mutant non-small cell lung cancer after osimertinib"),
+          h("p", { class: "small" }, "Este estudio prueba un tratamiento nuevo para cáncer de pulmón con mutación EGFR que dejó de responder a osimertinib. Su oncólogo debe confirmar si usted califica.")),
+        h("p", { class: "muted small" }, "Matched against eligibility criteria, explained in the patient's language."))),
+    h("div", { class: "facts-line" },
+      h("div", {}, h("b", {}, S.trials.length ? String(S.trials.length) : "…"), h("span", { class: "muted small" }, "recruiting treatment trials")),
+      h("div", {}, h("b", {}, S.countries ? String(S.countries) : "…"), h("span", { class: "muted small" }, "countries with open sites")),
+      h("div", {}, h("b", {}, S.db ? String(S.patients.length) : "–"), h("span", { class: "muted small" }, "patients saved")),
+      h("div", {}, h("b", {}, S.db ? String(open.length) : "–"), h("span", { class: "muted small" }, "boards waiting for opinions"))),
+    h("h2", {}, "What Puente does"),
+    h("div", { class: "grid-3" },
+      pillar("match", "Trial matcher", "Paste a summary in Spanish, Portuguese, English or any language. Claude checks every trial's eligibility criteria and ranks the closest options.", "#match", "Match a patient"),
+      pillar("patients", "Patient profiles", "Save each case with its matched trials, the family explanation, questions for the oncologist and an enrollment checklist.", "#patients", "See patients"),
+      pillar("boards", "Remote tumor boards", "A treating doctor posts a hard case. Specialists add written second opinions, and Claude summarizes where they agree and differ.", "#boards", "See tumor boards")),
+    h("h2", {}, "How a case moves"),
+    h("div", { class: "card flow" },
+      h("div", {}, h("h3", {}, "Paste the case"), h("p", { class: "muted small" }, "Any language. De-identified: initials, no ID numbers.")),
+      h("div", {}, h("h3", {}, "Get matched trials"), h("p", { class: "muted small" }, "Ranked by fit, then by how close the sites are.")),
+      h("div", {}, h("h3", {}, "Ask the board"), h("p", { class: "muted small" }, "Specialists weigh in on treatment and on the trials.")),
+      h("div", {}, h("h3", {}, "Enroll"), h("p", { class: "muted small" }, "The family gets a checklist for costs, travel and follow-up."))),
+    h("p", { class: "notice" }, h("strong", {}, "Prototype. "), "Use fictional or de-identified cases only. Puente supports doctors; it does not give medical advice, and the treating oncologist decides. ",
+      h("span", { class: "muted" }, S.snapshotDate ? `Trial data: ClinicalTrials.gov snapshot ${S.snapshotDate}.` : "")));
+}
+function pillar(k, title, text, href, cta) {
+  return h("div", { class: "card pillar" }, h("div", { class: "ic", html: icon(k) }), h("h3", {}, title), h("p", { class: "muted small" }, text),
+    h("a", { class: "btn ghost", href, style: "align-self:flex-start;padding-left:0" }, cta + " →"));
+}
+
+function viewMatch() {
+  const M = S.match;
+  const patient = M.forPatient ? S.patients.find((p) => p.id === M.forPatient) : null;
+  const wrap = h("div", { class: "view" },
+    head(patient ? `Re-run matching for ${patient.alias}` : "Trial matcher", "Paste a cancer patient's summary in any language. Claude reads it, checks recruiting trials against their eligibility criteria, and explains the options in the patient's language."));
+  const ta = h("textarea", { id: "case-text", placeholder: "Example: Mujer de 58 años de Asunción, Paraguay, con cáncer de pulmón estadio IV, mutación EGFR…", oninput: (e) => { M.text = e.target.value; } });
+  ta.value = M.text;
+  const run = h("button", { class: "btn primary", id: "run", disabled: M.running || !S.sample || !S.trials.length, onclick: runMatch }, ic("match"), M.running ? "Matching…" : "Find trials");
+  wrap.append(h("div", { class: "card stack" },
+    h("div", { class: "field" }, h("label", { for: "case-text" }, "Patient summary"), ta),
+    h("div", { class: "row" }, run,
+      M.running ? h("button", { class: "btn", onclick: () => M.ctl?.abort() }, "Stop") : null,
+      h("span", { class: "muted small", style: "margin-left:4px" }, "Try a sample:"),
+      ...[["es", "Spanish · lung"], ["pt", "Portuguese · breast"], ["en", "English · colorectal"]].map(([k, l]) =>
+        h("button", { class: "btn", disabled: M.running, onclick: () => { M.text = SAMPLES[k]; renderView(); } }, l))),
+    !S.sample ? (S.standalone
+      ? h("p", { class: "notice" }, "Add your Anthropic API key in ", h("a", { href: "#settings" }, "Settings"), " to run matching.")
+      : h("p", { class: "muted small" }, "Matching uses Claude and runs when this app is opened in Claude.")) : null,
+    h("p", { class: "muted small" }, `Searches ${S.trials.length || "…"} recruiting treatment trials with sites in Latin America. Use de-identified cases only.`)));
+
+  if (M.running) wrap.append(h("div", { class: "card steps" },
+    ...[["read", "Reading the case and shortlisting trials"], ["assess", "Checking each trial's eligibility criteria"]].map(([k, l]) =>
+      h("div", { "data-state": M.step === k ? "active" : (k === "read" && M.step === "assess") ? "done" : "todo" }, h("span", { class: "dot" }), l)),
+    h("p", { class: "muted small" }, "Usually 30 to 90 seconds.")));
+  if (M.error) wrap.append(h("p", { class: M.error === "Stopped." ? "muted" : "error" }, M.error));
+  if (M.result) wrap.append(...resultBlocks(M.result, true));
+  return wrap;
+}
+
+function caseFacts(c) {
+  const rows = [["Summary", c.summary_en], ["Cancer", [c.cancer_type, c.stage && `stage ${c.stage}`].filter(Boolean).join(", ")],
+    ["Biomarkers", arr(c.biomarkers).join(", ") || "None stated"], ["Prior treatment", arr(c.prior_treatments).join(", ") || "None stated"],
+    ["Age / sex", [c.age, c.sex && c.sex !== "unknown" ? c.sex : null].filter((x) => x != null && x !== "").join(" · ") || "Not stated"],
+    ["Performance", c.performance_status || "Not stated"], ["Location", [c.city, c.country].filter(Boolean).join(", ") || "Not stated"],
+    ["Language", c.language || "Unknown"], ["Missing", arr(c.missing_info).join(", ") || "Nothing major"]];
+  return h("dl", { class: "facts" }, ...rows.flatMap(([k, v]) => [h("dt", {}, k), h("dd", {}, String(v ?? ""))]));
+}
+function trialCard(m) {
+  const t = S.byId.get(m.id);
+  const title = t?.title || m.id;
+  const p = t ? proximity(t, null) : null;
+  const sites = t ? t.sites : [];
+  const countries = p?.countries || [];
+  const contact = t?.contact ? [t.contact.name, t.contact.phone, t.contact.email].filter(Boolean).join(" · ") : "";
+  return h("article", { class: "card trial", dataset: { fit: m.fit } },
+    h("div", { class: "row" }, h("span", { class: "pill", "data-tone": m.fit }, m.fit), h("span", { class: "chip" }, PROX_LABEL[m.proximity] || ""),
+      ...(t?.phases || []).map((ph) => h("span", { class: "chip" }, ph.replace("PHASE", "Phase ").replace("EARLY_", "Early "))), h("span", { class: "mono muted" }, m.id)),
+    h("div", { class: "t-title" }, title),
+    m.plain_summary ? h("p", {}, m.plain_summary) : null,
+    t ? h("p", { class: "muted small" }, `${sites.length} recruiting site${sites.length === 1 ? "" : "s"} in ${countries.slice(0, 6).join(", ")}${countries.length > 6 ? ` and ${countries.length - 6} more` : ""}`) : null,
+    h("details", {}, h("summary", {}, "Why, and what a doctor should confirm"),
+      h("div", { class: "stack" },
+        h("div", {}, h("div", { class: "label" }, "For"), list(m.reasons_for)),
+        h("div", {}, h("div", { class: "label" }, "Against"), list(m.reasons_against)),
+        h("div", {}, h("div", { class: "label" }, "Doctor should confirm"), list(m.to_confirm)),
+        t ? h("div", {}, h("div", { class: "label" }, "Sites"), list(sites.slice(0, 8).map((s) => s.filter(Boolean).join(", ")))) : null,
+        contact ? h("div", {}, h("div", { class: "label" }, "Trial contact"), h("p", { class: "small" }, contact)) : null)),
+    h("a", { href: `https://clinicaltrials.gov/study/${encodeURIComponent(m.id)}`, target: "_blank", rel: "noopener", class: "small" }, "Open on ClinicalTrials.gov ↗"));
+}
+function resultBlocks(R, withSave) {
+  const out = [];
+  if (withSave) {
+    const alias = h("input", { type: "text", id: "alias", placeholder: "Initials or code, e.g. MG-58", maxlength: "60" });
+    alias.value = S.drafts.alias || (S.match.forPatient ? S.patients.find((p) => p.id === S.match.forPatient)?.alias || "" : "");
+    alias.addEventListener("input", (e) => { S.drafts.alias = e.target.value; });
+    const msg = h("p", { class: "small error" });
+    const save = h("button", { class: "btn primary", disabled: !S.db || !S.canWrite, onclick: async () => {
+      if (!alias.value.trim()) { msg.textContent = "Give the patient a code or initials (no full names)."; return; }
+      save.disabled = true; msg.textContent = "";
+      try { await savePatient(alias.value); S.drafts.alias = ""; } catch (e) { msg.textContent = dbFail(e); save.disabled = false; }
+    } }, S.match.forPatient ? "Update patient profile" : "Save as patient");
+    out.push(h("div", { class: "card stack" }, h("h2", {}, "Save this case"),
+      h("div", { class: "row", style: "align-items:flex-end" }, h("div", { class: "field", style: "flex:1;min-width:200px" }, h("label", { for: "alias" }, "Patient code"), alias), save),
+      !S.db ? h("p", { class: "muted small" }, "Saving works when this app is opened in Claude while signed in.") : null, msg));
+  }
+  out.push(h("h2", {}, "The case"), h("div", { class: "card" }, caseFacts(R.case)));
+  if (R.case.is_cancer_case === false) { out.push(h("p", {}, "This doesn't read as a cancer case, so no trials were checked.")); return out; }
+  if (!R.matches.length) { out.push(h("div", { class: "card empty" }, h("p", {}, "No trial in this snapshot fits this case. Puente's full engine also searches trials worldwide."))); return out; }
+  if (R.message) out.push(h("h2", {}, "For the patient and family"), h("div", { class: "card" }, h("p", { style: "font-size:1.02rem" }, R.message)));
+  out.push(h("h2", {}, `Trials to discuss (${R.matches.length})`), ...R.matches.map(trialCard),
+    h("div", { class: "grid-2" },
+      h("div", { class: "card stack" }, h("h3", {}, "Questions for the oncologist"), list(R.questions)),
+      h("div", { class: "card stack" }, h("h3", {}, "Before enrolling"), list(R.checklist))));
+  return out;
+}
+
+function viewPatients() {
+  const newBtn = h("a", { class: "btn primary", href: "#match", onclick: () => { S.match.forPatient = null; } }, ic("plus"), "New patient");
+  return h("div", { class: "view" }, head("Patients", "Every saved case, with its matched trials and tumor boards.", newBtn),
+    loadingOr("patients", () => {
+      if (!S.patients.length) return h("div", { class: "card empty", html: "" },
+        h("span", { html: icon("patients") }), h("h3", {}, "No patients yet"),
+        h("p", {}, "Run the matcher on a case and save it. It shows up here with its trials, the family explanation and the enrollment checklist."),
+        h("a", { class: "btn primary", href: "#match" }, "Match a patient"));
+      return h("div", { class: "card tablewrap", style: "padding:0" }, h("table", {},
+        h("thead", {}, h("tr", {}, ...["Patient", "Cancer", "Location", "Trials", "Boards", "Updated"].map((x) => h("th", {}, x)))),
+        h("tbody", {}, ...S.patients.map((p) => {
+          const c = p.case || {}, likely = (p.matches || []).filter((m) => m.fit === "likely").length;
+          const boards = S.boards.filter((b) => b.patient_id === p.id).length;
+          return h("tr", { class: "rowlink", tabindex: "0", onclick: () => go(`patient-${p.id}`), onkeydown: (e) => { if (e.key === "Enter") go(`patient-${p.id}`); } },
+            h("td", {}, h("b", {}, p.alias || "Unnamed")), h("td", {}, [c.cancer_type, c.stage && `stage ${c.stage}`].filter(Boolean).join(", ") || "–"),
+            h("td", {}, c.country || "–"), h("td", {}, `${(p.matches || []).length}${likely ? ` · ${likely} likely` : ""}`),
+            h("td", {}, String(boards)), h("td", { class: "muted" }, ago(p.updated_at)));
+        }))));
+    }));
+}
+
+function viewPatient(r) {
+  return h("div", { class: "view" }, loadingOr("patients", () => {
+    const p = S.patients.find((x) => x.id === r.id);
+    if (!p) return h("div", { class: "card empty" }, h("h3", {}, "Patient not found"), h("p", {}, "It may have been deleted."), h("a", { class: "btn", href: "#patients" }, "Back to patients"));
+    const boards = S.boards.filter((b) => b.patient_id === p.id);
+    const R = { text: p.text, case: p.case || {}, matches: p.matches || [], message: p.message, questions: p.questions, checklist: p.checklist };
+    const rerun = h("button", { class: "btn", disabled: !S.sample, onclick: () => { S.match = { ...S.match, text: p.text, result: null, error: "", forPatient: p.id }; S.drafts.alias = p.alias; go("match"); } }, ic("match"), "Re-run matching");
+    const toBoard = h("button", { class: "btn primary", disabled: !S.canWrite, onclick: () => { S.drafts.newBoardFor = p.id; renderView(); setTimeout(() => $("#question")?.focus(), 0); } }, ic("boards"), "Ask a tumor board");
+    const del = h("button", { class: "btn danger ghost", disabled: !S.canWrite, onclick: () => { S.drafts.confirmDelete = p.id; renderView(); } }, "Delete");
+    const box = h("div", { class: "stack", style: "gap:22px" },
+      h("a", { class: "btn ghost", href: "#patients", style: "align-self:flex-start;padding-left:0" }, ic("back"), "Patients"),
+      head(p.alias || "Patient", [p.case?.cancer_type, p.case?.country].filter(Boolean).join(" · ") + (p.updated_at ? ` · updated ${ago(p.updated_at)}` : ""), rerun, toBoard, del));
+    if (S.drafts.confirmDelete === p.id) box.append(h("div", { class: "card row", style: "justify-content:space-between" }, h("span", {}, `Delete ${p.alias}? Tumor boards for this patient stay.`),
+      h("div", { class: "row" }, h("button", { class: "btn", onclick: () => { S.drafts.confirmDelete = null; renderView(); } }, "Cancel"),
+        h("button", { class: "btn primary", onclick: async () => { try { await S.db.collection("patients").doc(p.id).delete(); S.drafts.confirmDelete = null; go("patients"); } catch (e) { alertInline(box, dbFail(e)); } } }, "Delete"))));
+    if (S.drafts.newBoardFor === p.id) box.append(newBoardForm(p));
+    if (boards.length) box.append(h("h2", {}, "Tumor boards"), ...boards.map(boardRow));
+    box.append(...resultBlocks(R, false),
+      h("details", { class: "card" }, h("summary", {}, "Original summary"), h("p", { style: "white-space:pre-wrap" }, p.text || "")));
+    return box;
+  }));
+}
+function alertInline(root, msg) { root.prepend(h("p", { class: "error" }, msg)); }
+
+function newBoardForm(p) {
+  const d = S.drafts.board ||= { question: "", specialties: ["Medical oncology"] };
+  const q = h("textarea", { id: "question", placeholder: "What do you want the board to weigh in on? e.g. Best next line after osimertinib progression; is any of these trials worth referring her to?", style: "min-height:100px", oninput: (e) => { d.question = e.target.value; } });
+  q.value = d.question;
+  const msg = h("p", { class: "small error" });
+  const specs = h("div", { class: "row" }, ...SPECIALTIES.map((s) => {
+    const on = d.specialties.includes(s);
+    return h("button", { class: "btn", type: "button", "aria-pressed": String(on), style: on ? "border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)" : "",
+      onclick: () => { d.specialties = on ? d.specialties.filter((x) => x !== s) : [...d.specialties, s]; renderView(); } }, s);
+  }));
+  const submit = h("button", { class: "btn primary", onclick: async () => {
+    if (!d.question.trim()) { msg.textContent = "Write the question for the board."; return; }
+    submit.disabled = true;
+    try { await createBoard(p, d.question, d.specialties); S.drafts.board = null; S.drafts.newBoardFor = null; } catch (e) { msg.textContent = dbFail(e); submit.disabled = false; }
+  } }, "Post to tumor board");
+  return h("div", { class: "card stack" }, h("h2", {}, "Ask a tumor board"),
+    h("p", { class: "muted small" }, "Specialists you share this workspace with see the case, the matched trials and your question. You stay the treating doctor; they give written second opinions."),
+    h("div", { class: "field" }, h("label", { for: "question" }, "Question for the board"), q),
+    h("div", { class: "field" }, h("span", { class: "label" }, "Specialties needed"), specs),
+    h("div", { class: "row" }, submit, h("button", { class: "btn", onclick: () => { S.drafts.newBoardFor = null; renderView(); } }, "Cancel")), msg);
+}
+
+function boardRow(b) {
+  const n = S.opinions.filter((o) => o.board_id === b.id).length;
+  return h("a", { class: "card clickable", href: `#board-${b.id}` },
+    h("div", { class: "row", style: "justify-content:space-between" },
+      h("div", { class: "stack", style: "gap:4px" },
+        h("div", { class: "row" }, h("span", { class: "pill", "data-tone": b.status }, b.status), h("b", {}, b.patient_alias || "Patient"),
+          h("span", { class: "muted small" }, [b.case?.cancer_type, b.case?.country].filter(Boolean).join(" · "))),
+        h("p", { class: "small", style: "display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden" }, b.question)),
+      h("div", { class: "muted small", style: "text-align:right" }, h("div", {}, `${n} opinion${n === 1 ? "" : "s"}`), h("div", {}, ago(b.created_at)))));
+}
+
+function viewBoards() {
+  return h("div", { class: "view" }, head("Tumor boards", "Hard cases posted by treating doctors. Read the case, then add your written second opinion."),
+    loadingOr("boards", () => {
+      if (!S.boards.length) return h("div", { class: "card empty" }, h("span", { html: icon("boards") }), h("h3", {}, "No tumor boards yet"),
+        h("p", {}, "Open a patient's profile and choose Ask a tumor board. Specialists you share Puente with can then add their opinions here."),
+        h("a", { class: "btn primary", href: "#patients" }, "Go to patients"));
+      const open = S.boards.filter((b) => b.status === "open"), closed = S.boards.filter((b) => b.status !== "open");
+      return h("div", { class: "stack" },
+        h("h2", {}, `Waiting for opinions (${open.length})`), ...(open.length ? open.map(boardRow) : [h("p", { class: "muted" }, "Nothing waiting.")]),
+        closed.length ? h("h2", {}, `Closed (${closed.length})`) : null, ...closed.map(boardRow));
+    }));
+}
+
+function viewBoard(r) {
+  return h("div", { class: "view" }, loadingOr("boards", () => {
+    const b = S.boards.find((x) => x.id === r.id);
+    if (!b) return h("div", { class: "card empty" }, h("h3", {}, "Tumor board not found"), h("a", { class: "btn", href: "#boards" }, "Back to tumor boards"));
+    const ops = S.opinions.filter((o) => o.board_id === b.id);
+    const mine = S.me?.id && b.created_by === S.me.id;
+    const toggle = h("button", { class: "btn", disabled: !S.canWrite, onclick: async () => {
+      try { await S.db.collection("boards").doc(b.id).update({ status: b.status === "open" ? "closed" : "open" }); } catch (e) { alertInline(left, dbFail(e)); }
+    } }, b.status === "open" ? "Close board" : "Reopen");
+    const left = h("div", { class: "stack", style: "gap:18px" });
+    const right = h("div", { class: "stack", style: "gap:18px" });
+
+    // Case brief (Claude) + question
+    left.append(h("div", { class: "card stack" }, h("div", { class: "label" }, "Question from the treating doctor"), h("p", { style: "font-size:1.05rem;white-space:pre-wrap" }, b.question),
+      b.specialties?.length ? h("div", { class: "row" }, ...b.specialties.map((s) => h("span", { class: "chip" }, s))) : null));
+    if (b.brief) left.append(h("div", { class: "card brief stack" }, h("div", { class: "row" }, h("span", { html: icon("spark"), style: "display:inline-flex;width:18px;color:var(--accent)" }), h("h3", {}, "Case brief")),
+      b.brief.one_liner ? h("p", {}, b.brief.one_liner) : null,
+      h("div", { class: "grid-2" }, h("div", {}, h("div", { class: "label" }, "Key facts"), list(b.brief.key_facts)), h("div", {}, h("div", { class: "label" }, "Treatment so far"), list(b.brief.treatment_history))),
+      h("div", {}, h("div", { class: "label" }, "For the board to weigh"), list(b.brief.open_questions)),
+      h("p", { class: "muted small" }, "Prepared by Claude from the record. Check it against the case below.")));
+    else left.append(h("div", { class: "card brief row", style: "justify-content:space-between" }, h("span", { class: "muted" }, "No case brief yet."),
+      h("button", { class: "btn", disabled: !S.sample || !S.canWrite, onclick: async (e) => { e.target.disabled = true; e.target.textContent = "Preparing…"; try { await prepareBrief(b.id, b); } catch (err) { e.target.textContent = "Try again"; e.target.disabled = false; alertInline(left, err?.code ? sampleError(err) : dbFail(err)); } } }, "Prepare brief")));
+
+    // Opinions
+    left.append(h("h2", {}, `Opinions (${ops.length})`));
+    if (!ops.length) left.append(h("p", { class: "muted" }, "No opinions yet. Specialists you share Puente with can add theirs here."));
+    const opList = h("div", { class: "stack" });
+    left.append(opList);
+    const ids = [...new Set(ops.map((o) => o.author).filter(Boolean))];
+    const drawOps = (profiles = {}) => opList.replaceChildren(...ops.map((o) => {
+      const pr = profiles[o.author] || {};
+      return h("div", { class: "card opinion" }, h("img", { class: "avatar", src: safeUrl(pr.avatarUrl), alt: "", style: "width:36px;height:36px" }),
+        h("div", { class: "body" }, h("div", { class: "who" }, h("b", {}, pr.name || "A specialist"), h("span", { class: "chip" }, o.specialty || "Specialist"), h("span", { class: "muted small" }, ago(o.created_at))),
+          h("p", { style: "white-space:pre-wrap" }, o.recommendation),
+          o.trials_view ? h("div", {}, h("div", { class: "label" }, "On the trials"), h("p", { class: "small", style: "white-space:pre-wrap" }, o.trials_view)) : null));
+    }));
+    drawOps();
+    if (ids.length && S.user) S.user.profiles(ids).then(drawOps).catch(() => {});
+
+    // Consensus
+    if (ops.length >= 2 || b.consensus) {
+      const stale = b.consensus && b.consensus.opinion_count !== ops.length;
+      const btn = h("button", { class: "btn", disabled: !S.sample || !S.canWrite || ops.length < 2, onclick: async () => {
+        btn.disabled = true; btn.textContent = "Summarizing…";
+        try { await summarizeBoard(b, ops); } catch (e) { btn.disabled = false; btn.textContent = "Try again"; alertInline(left, e?.code ? sampleError(e) : dbFail(e)); }
+      } }, b.consensus ? "Update summary" : "Summarize opinions");
+      left.append(h("div", { class: "card brief stack" }, h("div", { class: "row", style: "justify-content:space-between" }, h("h3", {}, "Where the board stands"), btn),
+        b.consensus ? h("div", { class: "stack" },
+          h("div", {}, h("div", { class: "label" }, "Agreement"), list(b.consensus.agreement)),
+          h("div", {}, h("div", { class: "label" }, "Disagreement"), list(b.consensus.disagreement)),
+          h("div", {}, h("div", { class: "label" }, "Next steps"), list(b.consensus.next_steps)),
+          h("p", { class: "muted small" }, `Summarized by Claude from ${b.consensus.opinion_count} opinion${b.consensus.opinion_count === 1 ? "" : "s"}${stale ? "; new opinions since, update it" : ""}.`))
+          : h("p", { class: "muted small" }, "Claude summarizes where the specialists agree, where they differ, and the next steps they call for.")));
+    }
+
+    // Add opinion form
+    if (b.status === "open") {
+      const d = S.drafts[`op-${b.id}`] ||= { specialty: "Medical oncology", recommendation: "", trials: "" };
+      const sel = h("select", { id: "op-specialty", onchange: (e) => { d.specialty = e.target.value; } }, ...SPECIALTIES.map((s) => h("option", { value: s, selected: d.specialty === s }, s)));
+      const rec = h("textarea", { id: "op-rec", placeholder: "Your recommendation and reasoning.", oninput: (e) => { d.recommendation = e.target.value; } }); rec.value = d.recommendation;
+      const tv = h("textarea", { id: "op-trials", style: "min-height:70px", placeholder: "Optional: which of the matched trials, if any, you'd refer to and why.", oninput: (e) => { d.trials = e.target.value; } }); tv.value = d.trials;
+      const msg = h("p", { class: "small error" });
+      const post = h("button", { class: "btn primary", disabled: !S.db || !S.canWrite, onclick: async () => {
+        if (!d.recommendation.trim()) { msg.textContent = "Write your recommendation first."; return; }
+        post.disabled = true;
+        try { await addOpinion(b, d); S.drafts[`op-${b.id}`] = null; renderView(); } catch (e) { msg.textContent = dbFail(e); post.disabled = false; }
+      } }, ic("chat"), "Post opinion");
+      left.append(h("div", { class: "card stack" }, h("h2", {}, "Add your opinion"),
+        h("div", { class: "field" }, h("label", { for: "op-specialty" }, "Your specialty"), sel),
+        h("div", { class: "field" }, h("label", { for: "op-rec" }, "Recommendation"), rec),
+        h("div", { class: "field" }, h("label", { for: "op-trials" }, "On the trials"), tv),
+        h("div", { class: "row" }, post, h("span", { class: "muted small" }, "Posted under your name. The treating doctor decides.")), msg));
+    }
+
+    // Right column: case + trials
+    right.append(h("div", { class: "card stack" }, h("h3", {}, "The case"), caseFacts(b.case || {}),
+      h("details", {}, h("summary", {}, "Original summary"), h("p", { class: "small", style: "white-space:pre-wrap" }, b.text || "")),
+      h("a", { class: "btn ghost", href: `#patient-${b.patient_id}`, style: "align-self:flex-start;padding-left:0" }, "Open patient profile →")));
+    if (b.matches?.length) right.append(h("div", { class: "card stack" }, h("h3", {}, "Matched trials"),
+      ...b.matches.map((m) => { const t = S.byId.get(m.id); return h("div", { class: "stack", style: "gap:4px" },
+        h("div", { class: "row" }, h("span", { class: "pill", "data-tone": m.fit }, m.fit), h("a", { class: "mono", href: `https://clinicaltrials.gov/study/${encodeURIComponent(m.id)}`, target: "_blank", rel: "noopener" }, m.id)),
+        h("span", { class: "small" }, t?.title || "")); })));
+
+    return h("div", { class: "stack", style: "gap:22px" },
+      h("a", { class: "btn ghost", href: "#boards", style: "align-self:flex-start;padding-left:0" }, ic("back"), "Tumor boards"),
+      head(`Tumor board · ${b.patient_alias || "Patient"}`, [b.case?.cancer_type, b.case?.country, `posted ${ago(b.created_at)}`].filter(Boolean).join(" · "),
+        h("span", { class: "pill", "data-tone": b.status }, b.status), (mine || S.me?.isOwner) ? toggle : null),
+      h("div", { class: "split" }, left, right));
+  }));
+}
+
+function viewSettings() {
+  const wrap = h("div", { class: "view" }, head("Settings", "This copy of Puente runs on its own, outside Claude."));
+  if (!S.standalone) { wrap.append(h("div", { class: "card" }, h("p", {}, "Inside Claude, Puente uses your Claude account and a workspace shared with the people you invite. Nothing to set up."))); return wrap; }
+  const P = window.PuenteStandalone;
+  const has = !!P.getKey();
+  const input = h("input", { type: "password", id: "api-key", placeholder: has ? "A key is saved. Paste a new one to replace it." : "sk-ant-…", autocomplete: "off", spellcheck: "false" });
+  const msg = h("p", { class: "small" });
+  wrap.append(h("div", { class: "card stack" }, h("h2", {}, "Anthropic API key"),
+    h("p", { class: "muted small" }, "Matching and case briefs call Claude with your own key. It's saved only in this browser and sent only to Anthropic. Get one at console.anthropic.com → API keys, and add a few dollars of credit."),
+    h("div", { class: "field" }, h("label", { for: "api-key" }, "API key"), input),
+    h("div", { class: "row" },
+      h("button", { class: "btn primary", onclick: () => {
+        const v = input.value.trim();
+        if (!/^sk-ant-/.test(v)) { msg.className = "small error"; msg.textContent = "That doesn't look like an Anthropic key. It starts with sk-ant-."; return; }
+        P.setKey(v); S.sample = P.makeSample(v); input.value = ""; msg.className = "small"; msg.textContent = "Saved. You can run the matcher now."; renderShell();
+      } }, "Save key"),
+      has ? h("button", { class: "btn danger", onclick: () => { P.setKey(""); S.sample = null; renderView(); } }, "Remove key") : null),
+    msg),
+    h("div", { class: "card stack" }, h("h2", {}, "Where your data lives"),
+      h("p", { class: "muted small" }, "Patients and tumor boards you create here are saved in this browser only. To work with other doctors on shared tumor boards, use the Claude version of Puente and share it with them."),
+      h("p", { class: "muted small" }, "Never paste real names or ID numbers. Use initials or a code.")));
+  return wrap;
+}
+
+/* ---------------- boot ---------------- */
+renderShell(); renderView();
 
 (async () => {
   try {
     const data = await (await fetch("trials.json")).json();
-    TRIALS = data.trials; BY_ID = new Map(TRIALS.map((t) => [t.id, t]));
-    $("snapshot").textContent = `${data.count} recruiting treatment trials with sites in Latin America · ClinicalTrials.gov snapshot ${data.generated_at}`;
-  } catch {
-    $("snapshot").textContent = "Couldn't load the trial snapshot. Reload the page.";
-    return;
-  }
-  sample = window.claude ? await window.claude.use("sample") : null;
-  if (sample) $("go").disabled = false;
-  else $("unavailable").hidden = false;
+    S.trials = data.trials; S.byId = new Map(S.trials.map((t) => [t.id, t])); S.snapshotDate = data.generated_at;
+    S.countries = new Set(S.trials.flatMap((t) => t.sites.map((s) => s[2]))).size;
+  } catch { S.snapshotDate = ""; }
+  scheduleRender();
 })();
+
+(async () => {
+  if (!window.claude) return bootStandalone();
+  const [sample, db, user] = await Promise.all([claude.use("sample"), claude.use("db"), claude.use("user")]);
+  S.sample = sample; S.user = user;
+  if (user) { S.me = await user.me(); const cw = await user.can("data.write"); if (cw === false) S.canWrite = false; }
+  if (db) {
+    S.db = db;
+    const timer = setTimeout(() => { if (!S.loaded.patients) { S.dbError = "Can't reach saved data yet. Check your connection; it will load when it can."; scheduleRender(); } }, 10000);
+    const sub = (name, q, key) => q.onSnapshot((snap) => {
+      S[key] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (!snap.metadata.fromCache) { S.loaded[key] = true; if (key === "patients") { clearTimeout(timer); S.dbError = ""; } }
+      else if (snap.size) S.loaded[key] = true;
+      scheduleRender();
+    }, (e) => { S.loaded[key] = true; if (e?.code !== "revoked") S.dbError = "Saved data couldn't load. Reload to try again."; clearTimeout(timer); scheduleRender(); });
+    sub("patients", db.collection("patients").orderBy("updated_at", "desc"), "patients");
+    sub("boards", db.collection("boards").orderBy("created_at", "desc"), "boards");
+    sub("opinions", db.collection("opinions").orderBy("created_at", "asc"), "opinions");
+  }
+  scheduleRender();
+})();
+
+/* Outside Claude (GitHub Pages, a local file server): your own API key, data in this browser. */
+async function bootStandalone() {
+  S.standalone = true;
+  await new Promise((resolve) => {
+    const s = document.createElement("script");
+    s.src = "standalone.js"; s.onload = resolve; s.onerror = resolve;
+    document.head.append(s);
+  });
+  const P = window.PuenteStandalone;
+  if (!P) { scheduleRender(); return; }
+  const key = P.getKey();
+  S.sample = key ? P.makeSample(key) : null;
+  S.user = P.makeUser(); S.me = await S.user.me();
+  const db = P.makeDb(); S.db = db;
+  for (const [key, field, dir] of [["patients", "updated_at", "desc"], ["boards", "created_at", "desc"], ["opinions", "created_at", "asc"]]) {
+    db.collection(key).orderBy(field, dir).onSnapshot((snap) => {
+      S[key] = snap.docs.map((d) => ({ id: d.id, ...d.data() })); S.loaded[key] = true; scheduleRender();
+    });
+  }
+  scheduleRender();
+}
 </script>

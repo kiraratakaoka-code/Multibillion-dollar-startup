@@ -8,7 +8,8 @@
     "match": "bun run src/cli.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",
-    "snapshot": "bun run scripts/build-snapshot.ts"
+    "snapshot": "bun run scripts/build-snapshot.ts",
+    "build:site": "bun run scripts/build-site.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.14.0",
