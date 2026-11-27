@@ -1,5 +1,5 @@
 /**
- * Standalone mode for the Puente web app (GitHub Pages or any static host, outside Claude).
+ * Standalone mode for the Eligo web app (GitHub Pages or any static host, outside Claude).
  * Inside Claude the app uses the viewer's Claude account and a shared database.
  * Here it uses the person's own Anthropic API key and stores data in this browser.
  *
@@ -8,6 +8,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 export const MODEL = "claude-opus-5-5";
+// Storage keys keep the original "puente:" prefix so API keys and data saved before the rename still load.
 const KEY_STORAGE = "puente:anthropic-key";
 const DB_PREFIX = "puente:db:";
 
@@ -156,5 +157,5 @@ export function makeUser() {
 
 // Exposed for the page's plain <script>.
 if (typeof window !== "undefined") {
-  (window as any).PuenteStandalone = { makeSample, makeDb, makeUser, getKey, setKey, MODEL };
+  (window as any).EligoStandalone = { makeSample, makeDb, makeUser, getKey, setKey, MODEL };
 }

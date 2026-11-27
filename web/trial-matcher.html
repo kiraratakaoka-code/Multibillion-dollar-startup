@@ -1,4 +1,4 @@
-<title>Puente</title>
+<title>Eligo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -184,9 +184,9 @@
 <div class="app">
   <header class="topnav">
     <div class="inner">
-      <a class="brand" href="#home" aria-label="Puente home">
-        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M5 22c3.5-8 18.5-8 22 0" stroke="var(--accent-fg)" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M9 22v-4M16 22v-6M23 22v-4" stroke="var(--accent-fg)" stroke-width="2" stroke-linecap="round"/></svg>
-        <b>Puente</b>
+      <a class="brand" href="#home" aria-label="Eligo home">
+        <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--accent)"/><path d="M9 16.5l4.6 4.6L23.5 11" stroke="var(--accent-fg)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <b>Eligo</b>
       </a>
       <nav class="nav" id="side-nav" aria-label="Sections"></nav>
       <div class="me" id="me-box"></div>
@@ -493,7 +493,7 @@ function viewHome() {
       h("div", { class: "copy" },
         h("span", { class: "kicker" }, "CANCER TRIAL ACCESS · LATIN AMERICA"),
         h("h1", {}, "The trial that could help is often one bus ride away."),
-        h("p", {}, "Puente reads a patient's records in any language, checks recruiting trials against their eligibility criteria, explains the options to the family in their own language, and puts hard cases in front of specialists through remote tumor boards."),
+        h("p", {}, "Eligo reads a patient's records in any language, checks recruiting trials against their eligibility criteria, explains the options to the family in their own language, and puts hard cases in front of specialists through remote tumor boards."),
         h("div", { class: "row" }, h("a", { class: "btn primary", href: "#match" }, "Match a patient"), h("a", { class: "btn", href: "#boards" }, "Open tumor boards"))),
       h("div", { class: "demo", "aria-label": "Example result" },
         h("div", { class: "row", style: "justify-content:space-between" }, h("span", { class: "label" }, "Example"), h("span", { class: "mono muted" }, "Asunción → São Paulo")),
@@ -508,7 +508,7 @@ function viewHome() {
       h("div", {}, h("b", {}, S.countries ? String(S.countries) : "…"), h("span", { class: "muted small" }, "countries with open sites")),
       h("div", {}, h("b", {}, S.db ? String(S.patients.length) : "–"), h("span", { class: "muted small" }, "patients saved")),
       h("div", {}, h("b", {}, S.db ? String(open.length) : "–"), h("span", { class: "muted small" }, "boards waiting for opinions"))),
-    h("h2", {}, "What Puente does"),
+    h("h2", {}, "What Eligo does"),
     h("div", { class: "grid-3" },
       pillar("match", "Trial matcher", "Paste a summary in Spanish, Portuguese, English or any language. Claude checks every trial's eligibility criteria and ranks the closest options.", "#match", "Match a patient"),
       pillar("patients", "Patient profiles", "Save each case with its matched trials, the family explanation, questions for the oncologist and an enrollment checklist.", "#patients", "See patients"),
@@ -519,7 +519,7 @@ function viewHome() {
       h("div", {}, h("h3", {}, "Get matched trials"), h("p", { class: "muted small" }, "Ranked by fit, then by how close the sites are.")),
       h("div", {}, h("h3", {}, "Ask the board"), h("p", { class: "muted small" }, "Specialists weigh in on treatment and on the trials.")),
       h("div", {}, h("h3", {}, "Enroll"), h("p", { class: "muted small" }, "The family gets a checklist for costs, travel and follow-up."))),
-    h("p", { class: "notice" }, h("strong", {}, "Prototype. "), "Use fictional or de-identified cases only. Puente supports doctors; it does not give medical advice, and the treating oncologist decides. ",
+    h("p", { class: "notice" }, h("strong", {}, "Prototype. "), "Use fictional or de-identified cases only. Eligo supports doctors; it does not give medical advice, and the treating oncologist decides. ",
       h("span", { class: "muted" }, S.snapshotDate ? `Trial data: ClinicalTrials.gov snapshot ${S.snapshotDate}.` : "")));
 }
 function pillar(k, title, text, href, cta) {
@@ -604,7 +604,7 @@ function resultBlocks(R, withSave) {
   }
   out.push(h("h2", {}, "The case"), h("div", { class: "card" }, caseFacts(R.case)));
   if (R.case.is_cancer_case === false) { out.push(h("p", {}, "This doesn't read as a cancer case, so no trials were checked.")); return out; }
-  if (!R.matches.length) { out.push(h("div", { class: "card empty" }, h("p", {}, "No trial in this snapshot fits this case. Puente's full engine also searches trials worldwide."))); return out; }
+  if (!R.matches.length) { out.push(h("div", { class: "card empty" }, h("p", {}, "No trial in this snapshot fits this case. Eligo's full engine also searches trials worldwide."))); return out; }
   if (R.message) out.push(h("h2", {}, "For the patient and family"), h("div", { class: "card" }, h("p", { style: "font-size:1.02rem" }, R.message)));
   out.push(h("h2", {}, `Trials to discuss (${R.matches.length})`), ...R.matches.map(trialCard),
     h("div", { class: "grid-2" },
@@ -695,7 +695,7 @@ function viewBoards() {
   return h("div", { class: "view" }, head("Tumor boards", "Hard cases posted by treating doctors. Read the case, then add your written second opinion."),
     loadingOr("boards", () => {
       if (!S.boards.length) return h("div", { class: "card empty" }, h("span", { html: icon("boards") }), h("h3", {}, "No tumor boards yet"),
-        h("p", {}, "Open a patient's profile and choose Ask a tumor board. Specialists you share Puente with can then add their opinions here."),
+        h("p", {}, "Open a patient's profile and choose Ask a tumor board. Specialists you share Eligo with can then add their opinions here."),
         h("a", { class: "btn primary", href: "#patients" }, "Go to patients"));
       const open = S.boards.filter((b) => b.status === "open"), closed = S.boards.filter((b) => b.status !== "open");
       return h("div", { class: "stack" },
@@ -729,7 +729,7 @@ function viewBoard(r) {
 
     // Opinions
     left.append(h("h2", {}, `Opinions (${ops.length})`));
-    if (!ops.length) left.append(h("p", { class: "muted" }, "No opinions yet. Specialists you share Puente with can add theirs here."));
+    if (!ops.length) left.append(h("p", { class: "muted" }, "No opinions yet. Specialists you share Eligo with can add theirs here."));
     const opList = h("div", { class: "stack" });
     left.append(opList);
     const ids = [...new Set(ops.map((o) => o.author).filter(Boolean))];
@@ -796,9 +796,9 @@ function viewBoard(r) {
 }
 
 function viewSettings() {
-  const wrap = h("div", { class: "view" }, head("Settings", "This copy of Puente runs on its own, outside Claude."));
-  if (!S.standalone) { wrap.append(h("div", { class: "card" }, h("p", {}, "Inside Claude, Puente uses your Claude account and a workspace shared with the people you invite. Nothing to set up."))); return wrap; }
-  const P = window.PuenteStandalone;
+  const wrap = h("div", { class: "view" }, head("Settings", "This copy of Eligo runs on its own, outside Claude."));
+  if (!S.standalone) { wrap.append(h("div", { class: "card" }, h("p", {}, "Inside Claude, Eligo uses your Claude account and a workspace shared with the people you invite. Nothing to set up."))); return wrap; }
+  const P = window.EligoStandalone;
   const has = !!P.getKey();
   const input = h("input", { type: "password", id: "api-key", placeholder: has ? "A key is saved. Paste a new one to replace it." : "sk-ant-…", autocomplete: "off", spellcheck: "false" });
   const msg = h("p", { class: "small" });
@@ -814,7 +814,7 @@ function viewSettings() {
       has ? h("button", { class: "btn danger", onclick: () => { P.setKey(""); S.sample = null; renderView(); } }, "Remove key") : null),
     msg),
     h("div", { class: "card stack" }, h("h2", {}, "Where your data lives"),
-      h("p", { class: "muted small" }, "Patients and tumor boards you create here are saved in this browser only. To work with other doctors on shared tumor boards, use the Claude version of Puente and share it with them."),
+      h("p", { class: "muted small" }, "Patients and tumor boards you create here are saved in this browser only. To work with other doctors on shared tumor boards, use the Claude version of Eligo and share it with them."),
       h("p", { class: "muted small" }, "Never paste real names or ID numbers. Use initials or a code.")));
   return wrap;
 }
@@ -860,7 +860,7 @@ async function bootStandalone() {
     s.src = "standalone.js"; s.onload = resolve; s.onerror = resolve;
     document.head.append(s);
   });
-  const P = window.PuenteStandalone;
+  const P = window.EligoStandalone;
   if (!P) { scheduleRender(); return; }
   const key = P.getKey();
   S.sample = key ? P.makeSample(key) : null;
