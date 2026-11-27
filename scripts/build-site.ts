@@ -1,6 +1,6 @@
 /**
  * Builds the standalone website into docs/ for GitHub Pages (or any static host):
- *   docs/index.html    the Puente app (web/trial-matcher.html in a full HTML document)
+ *   docs/index.html    the Eligo app (web/trial-matcher.html in a full HTML document)
  *   docs/trials.json   the ClinicalTrials.gov snapshot
  *   docs/standalone.js the browser bundle: Anthropic SDK + local storage (web/standalone.ts)
  *

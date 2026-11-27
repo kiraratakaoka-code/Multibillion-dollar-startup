@@ -66,7 +66,7 @@ The tests use a recorded ClinicalTrials.gov response (`test/fixtures/`) and a fa
 - Contact details and sponsor travel-support info per site.
 - Uploading PDFs and photos of medical records.
 
-## Puente web app
+## Eligo web app
 
 One app (`web/trial-matcher.html`) with a home page, the trial matcher, patient profiles and remote tumor boards.
 It runs two ways:
